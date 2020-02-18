@@ -16,15 +16,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Based on
- *      NS-2 AODV model developed by the CMU/MONARCH group and optimized and
- *      tuned by Samir Das and Mahesh Marina, University of Cincinnati;
+ *      NS-3 AODV implementation by Elena Buchatskaia and Pavel Boyko
  *
- *      AODV-UU implementation by Erik Nordström of Uppsala University
- *      http://core.it.uu.se/core/index.php/AODV-UU
- *
- * Authors: Nathan Hall <n.hall.4@warwick.ac.uk>
- *          Elena Buchatskaia <borovkovaes@iitp.ru>
- *          Pavel Boyko <boyko@iitp.ru>
+ * Author: Nathan Hall <n.hall.4@warwick.ac.uk>
  */
 #ifndef ANTPACKET_H
 #define ANTPACKET_H

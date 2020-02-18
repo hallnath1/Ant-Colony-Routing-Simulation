@@ -284,7 +284,7 @@ private:
 };
 
 
-}  // namespace aodv
+}  // namespace ant
 }  // namespace ns3
 
-#endif /* AODV_RQUEUE_H */
+#endif /* ANT_RQUEUE_H */

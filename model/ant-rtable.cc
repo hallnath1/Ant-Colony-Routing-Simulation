@@ -42,16 +42,13 @@ namespace ant {
  The Routing Table
  */
 
-RoutingTableEntry::RoutingTableEntry (Ptr<NetDevice> dev, Ipv4Address dst, bool vSeqNo, uint32_t seqNo,
-                                      Ipv4InterfaceAddress iface, uint16_t hops, Ipv4Address nextHop, Time lifetime)
+RoutingTableEntry::RoutingTableEntry (Ptr<NetDevice> dev, Ipv4Address dst, Ipv4InterfaceAddress iface, 
+                                      uint16_t pheromone, Ipv4Address nextHop, Time lifetime)
   : m_ackTimer (Timer::CANCEL_ON_DESTROY),
-    m_validSeqNo (vSeqNo),
-    m_seqNo (seqNo),
-    m_hops (hops),
+    m_pheromone (pheromone),
     m_lifeTime (lifetime + Simulator::Now ()),
     m_iface (iface),
     m_flag (VALID),
-    m_reqCount (0),
     m_blackListState (false),
     m_blackListTimeout (Simulator::Now ())
 {
@@ -166,7 +163,6 @@ RoutingTableEntry::Invalidate (Time badLinkLifetime)
       return;
     }
   m_flag = INVALID;
-  m_reqCount = 0;
   m_lifeTime = badLinkLifetime + Simulator::Now ();
 }
 
@@ -198,7 +194,6 @@ RoutingTableEntry::Print (Ptr<OutputStreamWrapper> stream) const
   *os << std::setiosflags (std::ios::fixed) <<
   std::setiosflags (std::ios::left) << std::setprecision (2) <<
   std::setw (14) << (m_lifeTime - Simulator::Now ()).GetSeconds ();
-  *os << "\t" << m_hops << "\n";
 }
 
 /*
@@ -264,10 +259,6 @@ RoutingTable::AddRoute (RoutingTableEntry & rt)
 {
   NS_LOG_FUNCTION (this);
   Purge ();
-  if (rt.GetFlag () != IN_SEARCH)
-    {
-      rt.SetRreqCnt (0);
-    }
   std::pair<std::map<Ipv4Address, RoutingTableEntry>::iterator, bool> result =
     m_ipv4AddressEntry.insert (std::make_pair (rt.GetDestination (), rt));
   return result.second;
@@ -285,11 +276,6 @@ RoutingTable::Update (RoutingTableEntry & rt)
       return false;
     }
   i->second = rt;
-  if (i->second.GetFlag () != IN_SEARCH)
-    {
-      NS_LOG_LOGIC ("Route update to " << rt.GetDestination () << " set RreqCnt to 0");
-      i->second.SetRreqCnt (0);
-    }
   return true;
 }
 
@@ -305,27 +291,10 @@ RoutingTable::SetEntryState (Ipv4Address id, RouteFlags state)
       return false;
     }
   i->second.SetFlag (state);
-  i->second.SetRreqCnt (0);
   NS_LOG_LOGIC ("Route set entry state to " << id << ": new state is " << state);
   return true;
 }
 
-void
-RoutingTable::GetListOfDestinationWithNextHop (Ipv4Address nextHop, std::map<Ipv4Address, uint32_t> & unreachable )
-{
-  NS_LOG_FUNCTION (this);
-  Purge ();
-  unreachable.clear ();
-  for (std::map<Ipv4Address, RoutingTableEntry>::const_iterator i =
-         m_ipv4AddressEntry.begin (); i != m_ipv4AddressEntry.end (); ++i)
-    {
-      if (i->second.GetNextHop () == nextHop)
-        {
-          NS_LOG_LOGIC ("Unreachable insert " << i->first << " " << i->second.GetSeqNo ());
-          unreachable.insert (std::make_pair (i->first, i->second.GetSeqNo ()));
-        }
-    }
-}
 
 void
 RoutingTable::InvalidateRoutesWithDst (const std::map<Ipv4Address, uint32_t> & unreachable)
@@ -458,7 +427,6 @@ RoutingTable::MarkLinkAsUnidirectional (Ipv4Address neighbor, Time blacklistTime
     }
   i->second.SetUnidirectional (true);
   i->second.SetBlacklistTimeout (blacklistTimeout);
-  i->second.SetRreqCnt (0);
   NS_LOG_LOGIC ("Set link to " << neighbor << " to unidirectional");
   return true;
 }
