@@ -79,7 +79,8 @@ TypeHeader::Deserialize (Buffer::Iterator start)
     {
     case ARATYPE_FANT:
     case ARATYPE_BANT:
-    case ARATYPE_ROUTE_ERR:
+    case ARATYPE_FANT_ACK:
+    case ARATYPE_RERR:
       {
         m_type = (MessageType) type;
         break;
@@ -107,9 +108,14 @@ TypeHeader::Print (std::ostream &os) const
         os << "BANT";
         break;
       }
-    case ARATYPE_ROUTE_ERR:
+    case ARATYPE_FANT_ACK:
       {
-        os << "ROUTE_ERR";
+        os << "ROUTE_FANT_ACL";
+        break;
+      }
+    case ARATYPE_RERR:
+      {
+        os << "ROUTE_RERR";
         break;
       }
     default:
@@ -401,73 +407,6 @@ operator<< (std::ostream & os, FANTAckHeader const & h )
   return os;
 }
 
-//-----------------------------------------------------------------------------
-// RREP-ACK
-//-----------------------------------------------------------------------------
-
-RrepAckHeader::RrepAckHeader ()
-  : m_reserved (0)
-{
-}
-
-NS_OBJECT_ENSURE_REGISTERED (RrepAckHeader);
-
-TypeId
-RrepAckHeader::GetTypeId ()
-{
-  static TypeId tid = TypeId ("ns3::ant::RrepAckHeader")
-    .SetParent<Header> ()
-    .SetGroupName ("Ant")
-    .AddConstructor<RrepAckHeader> ()
-  ;
-  return tid;
-}
-
-TypeId
-RrepAckHeader::GetInstanceTypeId () const
-{
-  return GetTypeId ();
-}
-
-uint32_t
-RrepAckHeader::GetSerializedSize () const
-{
-  return 1;
-}
-
-void
-RrepAckHeader::Serialize (Buffer::Iterator i ) const
-{
-  i.WriteU8 (m_reserved);
-}
-
-uint32_t
-RrepAckHeader::Deserialize (Buffer::Iterator start )
-{
-  Buffer::Iterator i = start;
-  m_reserved = i.ReadU8 ();
-  uint32_t dist = i.GetDistanceFrom (start);
-  NS_ASSERT (dist == GetSerializedSize ());
-  return dist;
-}
-
-void
-RrepAckHeader::Print (std::ostream &os ) const
-{
-}
-
-bool
-RrepAckHeader::operator== (RrepAckHeader const & o ) const
-{
-  return m_reserved == o.m_reserved;
-}
-
-std::ostream &
-operator<< (std::ostream & os, RrepAckHeader const & h )
-{
-  h.Print (os);
-  return os;
-}
 
 //-----------------------------------------------------------------------------
 // RERR
@@ -500,7 +439,7 @@ RerrHeader::GetInstanceTypeId () const
 uint32_t
 RerrHeader::GetSerializedSize () const
 {
-  return (3 + 8 * GetDestCount ());
+  return (11);
 }
 
 void
@@ -508,13 +447,7 @@ RerrHeader::Serialize (Buffer::Iterator i ) const
 {
   i.WriteU8 (m_flag);
   i.WriteU8 (m_reserved);
-  i.WriteU8 (GetDestCount ());
-  std::map<Ipv4Address, uint32_t>::const_iterator j;
-  for (j = m_unreachableDstSeqNo.begin (); j != m_unreachableDstSeqNo.end (); ++j)
-    {
-      WriteTo (i, (*j).first);
-      i.WriteHtonU32 ((*j).second);
-    }
+  WriteTo (i, m_unreachableDst);
 }
 
 uint32_t
@@ -524,16 +457,7 @@ RerrHeader::Deserialize (Buffer::Iterator start )
   m_flag = i.ReadU8 ();
   m_reserved = i.ReadU8 ();
   uint8_t dest = i.ReadU8 ();
-  m_unreachableDstSeqNo.clear ();
-  Ipv4Address address;
-  uint32_t seqNo;
-  for (uint8_t k = 0; k < dest; ++k)
-    {
-      ReadFrom (i, address);
-      seqNo = i.ReadNtohU32 ();
-      m_unreachableDstSeqNo.insert (std::make_pair (address, seqNo));
-    }
-
+  ReadFrom (i, m_unreachableDst);
   uint32_t dist = i.GetDistanceFrom (start);
   NS_ASSERT (dist == GetSerializedSize ());
   return dist;
@@ -544,10 +468,7 @@ RerrHeader::Print (std::ostream &os ) const
 {
   os << "Unreachable destination (ipv4 address, seq. number):";
   std::map<Ipv4Address, uint32_t>::const_iterator j;
-  for (j = m_unreachableDstSeqNo.begin (); j != m_unreachableDstSeqNo.end (); ++j)
-    {
-      os << (*j).first << ", " << (*j).second;
-    }
+  os << m_unreachableDst;
   os << "No delete flag " << (*this).GetNoDelete ();
 }
 
@@ -570,59 +491,13 @@ RerrHeader::GetNoDelete () const
   return (m_flag & (1 << 0));
 }
 
-bool
-RerrHeader::AddUnDestination (Ipv4Address dst, uint32_t seqNo )
-{
-  if (m_unreachableDstSeqNo.find (dst) != m_unreachableDstSeqNo.end ())
-    {
-      return true;
-    }
-
-  NS_ASSERT (GetDestCount () < 255); // can't support more than 255 destinations in single RERR
-  m_unreachableDstSeqNo.insert (std::make_pair (dst, seqNo));
-  return true;
-}
-
-bool
-RerrHeader::RemoveUnDestination (std::pair<Ipv4Address, uint32_t> & un )
-{
-  if (m_unreachableDstSeqNo.empty ())
-    {
-      return false;
-    }
-  std::map<Ipv4Address, uint32_t>::iterator i = m_unreachableDstSeqNo.begin ();
-  un = *i;
-  m_unreachableDstSeqNo.erase (i);
-  return true;
-}
-
-void
-RerrHeader::Clear ()
-{
-  m_unreachableDstSeqNo.clear ();
-  m_flag = 0;
-  m_reserved = 0;
-}
 
 bool
 RerrHeader::operator== (RerrHeader const & o ) const
 {
-  if (m_flag != o.m_flag || m_reserved != o.m_reserved || GetDestCount () != o.GetDestCount ())
+  if (m_flag != o.m_flag || m_reserved != o.m_reserved || m_unreachableDst!= o.m_unreachableDst)
     {
       return false;
-    }
-
-  std::map<Ipv4Address, uint32_t>::const_iterator j = m_unreachableDstSeqNo.begin ();
-  std::map<Ipv4Address, uint32_t>::const_iterator k = o.m_unreachableDstSeqNo.begin ();
-  for (uint8_t i = 0; i < GetDestCount (); ++i)
-    {
-      if ((j->first != k->first) || (j->second != k->second))
-        {
-          return false;
-        }
-
-      j++;
-      k++;
     }
   return true;
 }

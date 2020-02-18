@@ -22,7 +22,8 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Nathan Hall <n.hall.4@warwick.ac.uk>
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
 #ifndef ANTPACKET_H
@@ -47,7 +48,7 @@ enum MessageType
   ARATYPE_FANT  = 1,   //!< ARATYPE_FANT
   ARATYPE_BANT  = 2,   //!< ARATYPE_BANT
   ARATYPE_FANT_ACK = 3, //!< ARATYPE_FANT_ACK
-  ARATYPE_ROUTE_ERR = 4 //!< ARATYPE_ROUTE_ERR
+  ARATYPE_RERR = 4 //!< ARATYPE_ROUTE_ERR
 };
 
 /**
@@ -428,9 +429,8 @@ private:
   */
 std::ostream & operator<< (std::ostream & os, FANTAckHeader const &);
 
-
 /**
-* \ingroup aodv
+* \ingroup ant
 * \brief Route Error (RERR) Message Format
   \verbatim
   0                   1                   2                   3
@@ -439,12 +439,6 @@ std::ostream & operator<< (std::ostream & os, FANTAckHeader const &);
   |     Type      |N|          Reserved           |   DestCount   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |            Unreachable Destination IP Address (1)             |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |         Unreachable Destination Sequence Number (1)           |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-|
-  |  Additional Unreachable Destination IP Addresses (if needed)  |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |Additional Unreachable Destination Sequence Numbers (if needed)|
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
@@ -478,29 +472,6 @@ public:
   bool GetNoDelete () const;
 
   /**
-   * \brief Add unreachable node address and its sequence number in RERR header
-   * \param dst unreachable IPv4 address
-   * \param seqNo unreachable sequence number
-   * \return false if we already added maximum possible number of unreachable destinations
-   */
-  bool AddUnDestination (Ipv4Address dst, uint32_t seqNo);
-  /**
-   * \brief Delete pair (address + sequence number) from REER header, if the number of unreachable destinations > 0
-   * \param un unreachable pair (address + sequence number)
-   * \return true on success
-   */
-  bool RemoveUnDestination (std::pair<Ipv4Address, uint32_t> & un);
-  /// Clear header
-  void Clear ();
-  /**
-   * \returns number of unreachable destinations in RERR message
-   */
-  uint8_t GetDestCount () const
-  {
-    return (uint8_t)m_unreachableDstSeqNo.size ();
-  }
-
-  /**
    * \brief Comparison operator
    * \param o RERR header to compare
    * \return true if the RERR headers are equal
@@ -509,9 +480,7 @@ public:
 private:
   uint8_t m_flag;            ///< No delete flag
   uint8_t m_reserved;        ///< Not used (must be 0)
-
-  /// List of Unreachable destination: IP addresses and sequence numbers
-  std::map<Ipv4Address, uint32_t> m_unreachableDstSeqNo;
+  Ipv4Address m_unreachableDst; ///< Unreachable IP address
 };
 
 /**
@@ -521,7 +490,8 @@ private:
   */
 std::ostream & operator<< (std::ostream & os, RerrHeader const &);
 
+
 }  // namespace aodv
 }  // namespace ns3
 
-#endif /* AODVPACKET_H */
+#endif /* ANTPACKET_H */
