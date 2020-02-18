@@ -77,10 +77,10 @@ TypeHeader::Deserialize (Buffer::Iterator start)
   m_valid = true;
   switch (type)
     {
-    case AODVTYPE_RREQ:
-    case AODVTYPE_RREP:
-    case AODVTYPE_RERR:
-    case AODVTYPE_RREP_ACK:
+    case ARATYPE_FANT:
+    case ARATYPE_BANT:
+    case ARATYPE_DUPLI_ERR:
+    case ARATYPE_ROUTE_ERR:
       {
         m_type = (MessageType) type;
         break;
@@ -98,24 +98,24 @@ TypeHeader::Print (std::ostream &os) const
 {
   switch (m_type)
     {
-    case AODVTYPE_RREQ:
+    case ARATYPE_FANT:
       {
-        os << "RREQ";
+        os << "FANT";
         break;
       }
-    case AODVTYPE_RREP:
+    case ARATYPE_BANT:
       {
-        os << "RREP";
+        os << "BANT";
         break;
       }
-    case AODVTYPE_RERR:
+    case ARATYPE_DUPLI_ERR:
       {
-        os << "RERR";
+        os << "DUPLI_ERR";
         break;
       }
-    case AODVTYPE_RREP_ACK:
+    case ARATYPE_ROUTE_ERR:
       {
-        os << "RREP_ACK";
+        os << "ROUTE_ERR";
         break;
       }
     default:
@@ -139,69 +139,58 @@ operator<< (std::ostream & os, TypeHeader const & h)
 //-----------------------------------------------------------------------------
 // RREQ
 //-----------------------------------------------------------------------------
-RreqHeader::RreqHeader (uint8_t flags, uint8_t reserved, uint8_t hopCount, uint32_t requestID, Ipv4Address dst,
-                        uint32_t dstSeqNo, Ipv4Address origin, uint32_t originSeqNo)
-  : m_flags (flags),
-    m_reserved (reserved),
+FANTHeader::FANTHeader (uint8_t hopCount, uint32_t sequenceNo, Ipv4Address dst,
+                        Ipv4Address origin)
+  : 
     m_hopCount (hopCount),
-    m_requestID (requestID),
+    m_sequenceNo (sequenceNo),
     m_dst (dst),
-    m_dstSeqNo (dstSeqNo),
-    m_origin (origin),
-    m_originSeqNo (originSeqNo)
+    m_origin (origin)
 {
 }
 
-NS_OBJECT_ENSURE_REGISTERED (RreqHeader);
+NS_OBJECT_ENSURE_REGISTERED (FANTHeader);
 
 TypeId
-RreqHeader::GetTypeId ()
+FANTHeader::GetTypeId ()
 {
   static TypeId tid = TypeId ("ns3::ant::RreqHeader")
     .SetParent<Header> ()
     .SetGroupName ("Ant")
-    .AddConstructor<RreqHeader> ()
+    .AddConstructor<FANTHeader> ()
   ;
   return tid;
 }
 
 TypeId
-RreqHeader::GetInstanceTypeId () const
+FANTHeader::GetInstanceTypeId () const
 {
   return GetTypeId ();
 }
 
 uint32_t
-RreqHeader::GetSerializedSize () const
+FANTHeader::GetSerializedSize () const
 {
   return 23;
 }
 
 void
-RreqHeader::Serialize (Buffer::Iterator i) const
+FANTHeader::Serialize (Buffer::Iterator i) const
 {
-  i.WriteU8 (m_flags);
-  i.WriteU8 (m_reserved);
   i.WriteU8 (m_hopCount);
-  i.WriteHtonU32 (m_requestID);
+  i.WriteHtonU32 (m_sequenceNo);
   WriteTo (i, m_dst);
-  i.WriteHtonU32 (m_dstSeqNo);
   WriteTo (i, m_origin);
-  i.WriteHtonU32 (m_originSeqNo);
 }
 
 uint32_t
-RreqHeader::Deserialize (Buffer::Iterator start)
+FANTHeader::Deserialize (Buffer::Iterator start)
 {
   Buffer::Iterator i = start;
-  m_flags = i.ReadU8 ();
-  m_reserved = i.ReadU8 ();
   m_hopCount = i.ReadU8 ();
-  m_requestID = i.ReadNtohU32 ();
+  m_sequenceNo = i.ReadNtohU32 ();
   ReadFrom (i, m_dst);
-  m_dstSeqNo = i.ReadNtohU32 ();
   ReadFrom (i, m_origin);
-  m_originSeqNo = i.ReadNtohU32 ();
 
   uint32_t dist = i.GetDistanceFrom (start);
   NS_ASSERT (dist == GetSerializedSize ());
@@ -209,87 +198,24 @@ RreqHeader::Deserialize (Buffer::Iterator start)
 }
 
 void
-RreqHeader::Print (std::ostream &os) const
+FANTHeader::Print (std::ostream &os) const
 {
-  os << "RREQ ID " << m_requestID << " destination: ipv4 " << m_dst
-     << " sequence number " << m_dstSeqNo << " source: ipv4 "
-     << m_origin << " sequence number " << m_originSeqNo
-     << " flags:" << " Gratuitous RREP " << (*this).GetGratuitousRrep ()
-     << " Destination only " << (*this).GetDestinationOnly ()
-     << " Unknown sequence number " << (*this).GetUnknownSeqno ();
+  os << "FANT Sequence No " << m_sequenceNo << " destination: ipv4 " << m_dst
+     << " source: ipv4 " << m_origin;
 }
 
 std::ostream &
-operator<< (std::ostream & os, RreqHeader const & h)
+operator<< (std::ostream & os, FANTHeader const & h)
 {
   h.Print (os);
   return os;
 }
 
-void
-RreqHeader::SetGratuitousRrep (bool f)
-{
-  if (f)
-    {
-      m_flags |= (1 << 5);
-    }
-  else
-    {
-      m_flags &= ~(1 << 5);
-    }
-}
-
 bool
-RreqHeader::GetGratuitousRrep () const
+FANTHeader::operator== (FANTHeader const & o) const
 {
-  return (m_flags & (1 << 5));
-}
-
-void
-RreqHeader::SetDestinationOnly (bool f)
-{
-  if (f)
-    {
-      m_flags |= (1 << 4);
-    }
-  else
-    {
-      m_flags &= ~(1 << 4);
-    }
-}
-
-bool
-RreqHeader::GetDestinationOnly () const
-{
-  return (m_flags & (1 << 4));
-}
-
-void
-RreqHeader::SetUnknownSeqno (bool f)
-{
-  if (f)
-    {
-      m_flags |= (1 << 3);
-    }
-  else
-    {
-      m_flags &= ~(1 << 3);
-    }
-}
-
-bool
-RreqHeader::GetUnknownSeqno () const
-{
-  return (m_flags & (1 << 3));
-}
-
-bool
-RreqHeader::operator== (RreqHeader const & o) const
-{
-  return (m_flags == o.m_flags && m_reserved == o.m_reserved
-          && m_hopCount == o.m_hopCount && m_requestID == o.m_requestID
-          && m_dst == o.m_dst && m_dstSeqNo == o.m_dstSeqNo
-          && m_origin == o.m_origin && m_originSeqNo == o.m_originSeqNo);
+  return (m_hopCount == o.m_hopCount && m_sequenceNo == o.m_sequenceNo
+          && m_dst == o.m_dst && m_origin == o.m_origin);
 }
 
 //-----------------------------------------------------------------------------

@@ -187,19 +187,6 @@ void AntExample::CreateDevices ()
 
 void AntExample::InstallInternetStack ()
 {
-  AntHelper ant;
-  InternetStackHelper stack;
-  stack.SetRoutingHelper (ant);
-  stack.Install (nodes);
-  Ipv4AddressHelper address;
-  address.SetBase ("10.0.0.0", "255.0.0.0");
-  interfaces = address.Assign (devices);
-
-  if (printRoutes)
-    {
-      Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> ("ant.routes", std::ios::out);
-      ant.PrintRoutingTableAllAt (Seconds (8), routingStream);
-    }
 }
 
 void

@@ -56,7 +56,7 @@ public:
    * \return the object TypeId
    */
   static TypeId GetTypeId (void);
-  static const uint32_t AODV_PORT;
+  static const uint32_t ANT_PORT;
 
   /// constructor
   RoutingProtocol ();

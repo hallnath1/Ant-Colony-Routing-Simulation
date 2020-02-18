@@ -52,7 +52,7 @@ namespace ant {
 NS_OBJECT_ENSURE_REGISTERED (RoutingProtocol);
 
 /// UDP Port for AODV control traffic
-const uint32_t RoutingProtocol::AODV_PORT = 654;
+const uint32_t RoutingProtocol::ANT_PORT = 654;
 
 /**
 * \ingroup aodv
@@ -482,7 +482,7 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
       return true;
     }
 
-  // AODV is not a multicast routing protocol
+  // Ant-Colony is not a multicast routing protocol
   if (dst.IsMulticast ())
     {
       return false;
@@ -523,7 +523,7 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
                 {
                   UdpHeader udpHeader;
                   p->PeekHeader (udpHeader);
-                  if (udpHeader.GetDestinationPort () == AODV_PORT)
+                  if (udpHeader.GetDestinationPort () == ANT_PORT)
                     {
                       // AODV packets sent in broadcast are already managed
                       return true;
@@ -555,6 +555,7 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
   // Unicast local delivery
   if (m_ipv4->IsDestinationAddress (dst, iif))
     {
+      std::cout << "Destination in Routing Table" << std::endl; 
       UpdateRouteLifeTime (origin, m_activeRouteTimeout);
       RoutingTableEntry toOrigin;
       if (m_routingTable.LookupValidRoute (origin, toOrigin))
@@ -686,7 +687,7 @@ RoutingProtocol::NotifyInterfaceUp (uint32_t i)
   NS_ASSERT (socket != 0);
   socket->SetRecvCallback (MakeCallback (&RoutingProtocol::RecvAodv, this));
   socket->BindToNetDevice (l3->GetNetDevice (i));
-  socket->Bind (InetSocketAddress (iface.GetLocal (), AODV_PORT));
+  socket->Bind (InetSocketAddress (iface.GetLocal (), ANT_PORT));
   socket->SetAllowBroadcast (true);
   socket->SetIpRecvTtl (true);
   m_socketAddresses.insert (std::make_pair (socket, iface));
@@ -697,7 +698,7 @@ RoutingProtocol::NotifyInterfaceUp (uint32_t i)
   NS_ASSERT (socket != 0);
   socket->SetRecvCallback (MakeCallback (&RoutingProtocol::RecvAodv, this));
   socket->BindToNetDevice (l3->GetNetDevice (i));
-  socket->Bind (InetSocketAddress (iface.GetBroadcast (), AODV_PORT));
+  socket->Bind (InetSocketAddress (iface.GetBroadcast (), ANT_PORT));
   socket->SetAllowBroadcast (true);
   socket->SetIpRecvTtl (true);
   m_socketSubnetBroadcastAddresses.insert (std::make_pair (socket, iface));
@@ -796,7 +797,7 @@ RoutingProtocol::NotifyAddAddress (uint32_t i, Ipv4InterfaceAddress address)
           NS_ASSERT (socket != 0);
           socket->SetRecvCallback (MakeCallback (&RoutingProtocol::RecvAodv,this));
           socket->BindToNetDevice (l3->GetNetDevice (i));
-          socket->Bind (InetSocketAddress (iface.GetLocal (), AODV_PORT));
+          socket->Bind (InetSocketAddress (iface.GetLocal (), ANT_PORT));
           socket->SetAllowBroadcast (true);
           m_socketAddresses.insert (std::make_pair (socket, iface));
 
@@ -806,7 +807,7 @@ RoutingProtocol::NotifyAddAddress (uint32_t i, Ipv4InterfaceAddress address)
           NS_ASSERT (socket != 0);
           socket->SetRecvCallback (MakeCallback (&RoutingProtocol::RecvAodv, this));
           socket->BindToNetDevice (l3->GetNetDevice (i));
-          socket->Bind (InetSocketAddress (iface.GetBroadcast (), AODV_PORT));
+          socket->Bind (InetSocketAddress (iface.GetBroadcast (), ANT_PORT));
           socket->SetAllowBroadcast (true);
           socket->SetIpRecvTtl (true);
           m_socketSubnetBroadcastAddresses.insert (std::make_pair (socket, iface));
@@ -855,7 +856,7 @@ RoutingProtocol::NotifyRemoveAddress (uint32_t i, Ipv4InterfaceAddress address)
           socket->SetRecvCallback (MakeCallback (&RoutingProtocol::RecvAodv, this));
           // Bind to any IP address so that broadcasts can be received
           socket->BindToNetDevice (l3->GetNetDevice (i));
-          socket->Bind (InetSocketAddress (iface.GetLocal (), AODV_PORT));
+          socket->Bind (InetSocketAddress (iface.GetLocal (), ANT_PORT));
           socket->SetAllowBroadcast (true);
           socket->SetIpRecvTtl (true);
           m_socketAddresses.insert (std::make_pair (socket, iface));
@@ -866,7 +867,7 @@ RoutingProtocol::NotifyRemoveAddress (uint32_t i, Ipv4InterfaceAddress address)
           NS_ASSERT (socket != 0);
           socket->SetRecvCallback (MakeCallback (&RoutingProtocol::RecvAodv, this));
           socket->BindToNetDevice (l3->GetNetDevice (i));
-          socket->Bind (InetSocketAddress (iface.GetBroadcast (), AODV_PORT));
+          socket->Bind (InetSocketAddress (iface.GetBroadcast (), ANT_PORT));
           socket->SetAllowBroadcast (true);
           socket->SetIpRecvTtl (true);
           m_socketSubnetBroadcastAddresses.insert (std::make_pair (socket, iface));
@@ -1076,7 +1077,7 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
 void
 RoutingProtocol::SendTo (Ptr<Socket> socket, Ptr<Packet> packet, Ipv4Address destination)
 {
-  socket->SendTo (packet, 0, InetSocketAddress (destination, AODV_PORT));
+  socket->SendTo (packet, 0, InetSocketAddress (destination, ANT_PORT));
 
 }
 void
@@ -1427,7 +1428,7 @@ RoutingProtocol::SendReply (RreqHeader const & rreqHeader, RoutingTableEntry con
   packet->AddHeader (tHeader);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
   NS_ASSERT (socket);
-  socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
+  socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), ANT_PORT));
 }
 
 void
@@ -1462,7 +1463,7 @@ RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, Routing
   packet->AddHeader (tHeader);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
   NS_ASSERT (socket);
-  socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
+  socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), ANT_PORT));
 
   // Generating gratuitous RREPs
   if (gratRep)
@@ -1480,7 +1481,7 @@ RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, Routing
       Ptr<Socket> socket = FindSocketWithInterfaceAddress (toDst.GetInterface ());
       NS_ASSERT (socket);
       NS_LOG_LOGIC ("Send gratuitous RREP " << packet->GetUid ());
-      socket->SendTo (packetToDst, 0, InetSocketAddress (toDst.GetNextHop (), AODV_PORT));
+      socket->SendTo (packetToDst, 0, InetSocketAddress (toDst.GetNextHop (), ANT_PORT));
     }
 }
 
@@ -1500,7 +1501,7 @@ RoutingProtocol::SendReplyAck (Ipv4Address neighbor)
   m_routingTable.LookupRoute (neighbor, toNeighbor);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toNeighbor.GetInterface ());
   NS_ASSERT (socket);
-  socket->SendTo (packet, 0, InetSocketAddress (neighbor, AODV_PORT));
+  socket->SendTo (packet, 0, InetSocketAddress (neighbor, ANT_PORT));
 }
 
 void
@@ -1636,7 +1637,7 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
   packet->AddHeader (tHeader);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
   NS_ASSERT (socket);
-  socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
+  socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), ANT_PORT));
 }
 
 void
@@ -1979,7 +1980,7 @@ RoutingProtocol::SendRerrWhenNoRouteToForward (Ipv4Address dst,
           toOrigin.GetInterface ());
       NS_ASSERT (socket);
       NS_LOG_LOGIC ("Unicast RERR to the source of the data transmission");
-      socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
+      socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), ANT_PORT));
     }
   else
     {
@@ -2000,7 +2001,7 @@ RoutingProtocol::SendRerrWhenNoRouteToForward (Ipv4Address dst,
             {
               destination = iface.GetBroadcast ();
             }
-          socket->SendTo (packet->Copy (), 0, InetSocketAddress (destination, AODV_PORT));
+          socket->SendTo (packet->Copy (), 0, InetSocketAddress (destination, ANT_PORT));
         }
     }
 }

@@ -44,15 +44,15 @@ namespace ant {
 */
 enum MessageType
 {
-  AODVTYPE_RREQ  = 1,   //!< AODVTYPE_RREQ
-  AODVTYPE_RREP  = 2,   //!< AODVTYPE_RREP
-  AODVTYPE_RERR  = 3,   //!< AODVTYPE_RERR
-  AODVTYPE_RREP_ACK = 4 //!< AODVTYPE_RREP_ACK
+  ARATYPE_FANT  = 1,   //!< ARATYPE_FANT
+  ARATYPE_BANT  = 2,   //!< ARATYPE_BANT
+  ARATYPE_DUPLI_ERR  = 3,   //!< ARATYPE_DUPLI_ERR
+  ARATYPE_ROUTE_ERR = 4 //!< ARATYPE_ROUTE_ERR
 };
 
 /**
-* \ingroup aodv
-* \brief AODV types
+* \ingroup ant
+* \brief ANT types
 */
 class TypeHeader : public Header
 {
@@ -61,7 +61,7 @@ public:
    * constructor
    * \param t the AODV RREQ type
    */
-  TypeHeader (MessageType t = AODVTYPE_RREQ);
+  TypeHeader (MessageType t = ARATYPE_FANT);
 
   /**
    * \brief Get the type ID.
@@ -108,27 +108,23 @@ private:
 std::ostream & operator<< (std::ostream & os, TypeHeader const & h);
 
 /**
-* \ingroup aodv
-* \brief   Route Request (RREQ) Message Format
+* \ingroup ant
+* \brief   Forward Ant (FANT) Message Format
   \verbatim
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |J|R|G|D|U|   Reserved          |   Hop Count   |
+  |     Type      |            Reserved           |   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                            RREQ ID                            |
+  |                     FANT Sequence Number                      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                    Destination IP Address                     |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                  Destination Sequence Number                  |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                    Originator IP Address                      |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                  Originator Sequence Number                   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class RreqHeader : public Header
+class FANTHeader : public Header
 {
 public:
   /**
@@ -137,19 +133,16 @@ public:
    * \param flags the message flags (0)
    * \param reserved the reserved bits (0)
    * \param hopCount the hop count
-   * \param requestID the request ID
+   * \param sequenceNo the sequence number
    * \param dst the destination IP address
-   * \param dstSeqNo the destination sequence number
    * \param origin the origin IP address
-   * \param originSeqNo the origin sequence number
    */
-   RreqHeader (uint8_t flags = 0, uint8_t reserved = 0, uint8_t hopCount = 0,
-              uint32_t requestID = 0, Ipv4Address dst = Ipv4Address (),
-              uint32_t dstSeqNo = 0, Ipv4Address origin = Ipv4Address (),
-              uint32_t originSeqNo = 0);
+   FANTHeader (uint8_t hopCount = 0, uint32_t sequenceNo = 0, 
+              Ipv4Address dst = Ipv4Address (), 
+              Ipv4Address origin = Ipv4Address ());
 
   /**
-   * \brief Get the type ID.
+   * \brief Get the sequenceNo.
    * \return the object TypeId
    */
   static TypeId GetTypeId ();
@@ -177,18 +170,18 @@ public:
     return m_hopCount;
   }
   /**
-   * \brief Set the request ID
-   * \param id the request ID
+   * \brief Set the sequence number
+   * \param id the sequence number
    */
-  void SetId (uint32_t id)
+  void SetSequenceNo (uint32_t id)
   {
     m_requestID = id;
   }
   /**
-   * \brief Get the request ID
-   * \return the request ID
+   * \brief Get the sequence number
+   * \return the sequence number
    */
-  uint32_t GetId () const
+  uint32_t GetSequenceNo () const
   {
     return m_requestID;
   }
@@ -208,26 +201,6 @@ public:
   {
     return m_dst;
   }
-  /**
-   * \brief Set the destination sequence number
-   * \param s the destination sequence number
-   */
-  void SetDstSeqno (uint32_t s)
-  {
-    m_dstSeqNo = s;
-  }
-  /**
-   * \brief Get the destination sequence number
-   * \return the destination sequence number
-   */
-  uint32_t GetDstSeqno () const
-  {
-    return m_dstSeqNo;
-  }
-  /**
-   * \brief Set the origin address
-   * \param a the origin address
-   */
   void SetOrigin (Ipv4Address a)
   {
     m_origin = a;
@@ -240,70 +213,12 @@ public:
   {
     return m_origin;
   }
-  /**
-   * \brief Set the origin sequence number
-   * \param s the origin sequence number
-   */
-  void SetOriginSeqno (uint32_t s)
-  {
-    m_originSeqNo = s;
-  }
-  /**
-   * \brief Get the origin sequence number
-   * \return the origin sequence number
-   */
-  uint32_t GetOriginSeqno () const
-  {
-    return m_originSeqNo;
-  }
-
-  // Flags
-  /**
-   * \brief Set the gratuitous RREP flag
-   * \param f the gratuitous RREP flag
-   */
-  void SetGratuitousRrep (bool f);
-  /**
-   * \brief Get the gratuitous RREP flag
-   * \return the gratuitous RREP flag
-   */
-  bool GetGratuitousRrep () const;
-  /**
-   * \brief Set the Destination only flag
-   * \param f the Destination only flag
-   */
-  void SetDestinationOnly (bool f);
-  /**
-   * \brief Get the Destination only flag
-   * \return the Destination only flag
-   */
-  bool GetDestinationOnly () const;
-  /**
-   * \brief Set the unknown sequence number flag
-   * \param f the unknown sequence number flag
-   */
-  void SetUnknownSeqno (bool f);
-  /**
-   * \brief Get the unknown sequence number flag
-   * \return the unknown sequence number flag
-   */
-  bool GetUnknownSeqno () const;
-
-  /**
-   * \brief Comparison operator
-   * \param o RREQ header to compare
-   * \return true if the RREQ headers are equal
-   */
-  bool operator== (RreqHeader const & o) const;
+  bool operator== (FANTHeader const & o) const;
 private:
-  uint8_t        m_flags;          ///< |J|R|G|D|U| bit flags, see RFC
-  uint8_t        m_reserved;       ///< Not used (must be 0)
   uint8_t        m_hopCount;       ///< Hop Count
-  uint32_t       m_requestID;      ///< RREQ ID
+  uint32_t       m_sequenceNo;     ///< Sequence Number
   Ipv4Address    m_dst;            ///< Destination IP Address
-  uint32_t       m_dstSeqNo;       ///< Destination Sequence Number
   Ipv4Address    m_origin;         ///< Originator IP Address
-  uint32_t       m_originSeqNo;    ///< Source Sequence Number
 };
 
 /**

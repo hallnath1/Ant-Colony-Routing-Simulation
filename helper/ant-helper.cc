@@ -75,8 +75,4 @@ AntHelper::AssignStreams (NodeContainer c, int64_t stream)
     }
   return (currentStream - stream);
 }
-
-
-
 }
-
