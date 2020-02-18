@@ -139,9 +139,9 @@ operator<< (std::ostream & os, TypeHeader const & h)
 //-----------------------------------------------------------------------------
 // FANT
 //-----------------------------------------------------------------------------
-FANTHeader::FANTHeader (uint8_t hopCount, uint32_t sequenceNo, Ipv4Address dst,
+FANTHeader::FANTHeader (uint8_t flags, uint8_t hopCount, uint32_t sequenceNo, Ipv4Address dst,
                         Ipv4Address origin)
-  : 
+  : m_flags (flags),
     m_hopCount (hopCount),
     m_sequenceNo (sequenceNo),
     m_dst (dst),
@@ -211,6 +211,25 @@ operator<< (std::ostream & os, FANTHeader const & h)
   return os;
 }
 
+void
+FANTHeader::SetDuplicateErr (bool f)
+{
+  if (f)
+    {
+      m_flags |= (1 << 5);
+    }
+  else
+    {
+      m_flags &= ~(1 << 5);
+    }
+}
+
+bool
+FANTHeader::GetDuplicateErr () const
+{
+  return (m_flags & (1 << 5));
+}
+
 bool
 FANTHeader::operator== (FANTHeader const & o) const
 {
@@ -221,9 +240,9 @@ FANTHeader::operator== (FANTHeader const & o) const
 //-----------------------------------------------------------------------------
 // BANT
 //-----------------------------------------------------------------------------
-BANTHeader::BANTHeader (uint8_t hopCount, uint32_t sequenceNo, Ipv4Address dst,
+BANTHeader::BANTHeader (uint8_t flags, uint8_t hopCount, uint32_t sequenceNo, Ipv4Address dst,
                         Ipv4Address origin)
-  : 
+  : m_flags (flags),
     m_hopCount (hopCount),
     m_sequenceNo (sequenceNo),
     m_dst (dst),
@@ -291,6 +310,25 @@ operator<< (std::ostream & os, BANTHeader const & h)
 {
   h.Print (os);
   return os;
+}
+
+void
+BANTHeader::SetDuplicateErr (bool f)
+{
+  if (f)
+    {
+      m_flags |= (1 << 5);
+    }
+  else
+    {
+      m_flags &= ~(1 << 5);
+    }
+}
+
+bool
+BANTHeader::GetDuplicateErr () const
+{
+  return (m_flags & (1 << 5));
 }
 
 bool

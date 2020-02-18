@@ -114,7 +114,7 @@ std::ostream & operator<< (std::ostream & os, TypeHeader const & h);
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |            Reserved           |   Hop Count   |
+  |     Type      |D|          Reserved           |   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                     FANT Sequence Number                      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -137,8 +137,8 @@ public:
    * \param dst the destination IP address
    * \param origin the origin IP address
    */
-   FANTHeader (uint8_t hopCount = 0, uint32_t sequenceNo = 0, 
-              Ipv4Address dst = Ipv4Address (), 
+   FANTHeader (uint8_t flags = 0, uint8_t hopCount = 0, 
+              uint32_t sequenceNo = 0, Ipv4Address dst = Ipv4Address (), 
               Ipv4Address origin = Ipv4Address ());
 
   /**
@@ -213,12 +213,29 @@ public:
   {
     return m_origin;
   }
-  bool operator== (BANTHeader const & o) const;
+  // Flags
+  /**
+   * \brief Set the Duplicate Error flag
+   * \param f the Duplicate Error flag
+   */
+  void SetDuplicateErr (bool f);
+  /**
+   * \brief Get the gratuitous RREP flag
+   * \return the gratuitous RREP flag
+   */
+  bool GetDuplicateErr () const;
+  /**
+   * \brief Set the Duplicate Error flag
+   * \param f the Duplicate Error flag
+   */
+
+  bool operator== (FANTHeader const & o) const;
 private:
   uint8_t        m_hopCount;       ///< Hop Count
   uint32_t       m_sequenceNo;     ///< Sequence Number
   Ipv4Address    m_dst;            ///< Destination IP Address
   Ipv4Address    m_origin;         ///< Originator IP Address
+  uint8_t        m_flags;          ///< |D| bit flags
 };
 
 /**
@@ -235,7 +252,7 @@ std::ostream & operator<< (std::ostream & os, BANTHeader const &);
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |            Reserved           |   Hop Count   |
+  |     Type      |D|           Reserved          |   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                     BANT Sequence Number                      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -258,8 +275,8 @@ public:
    * \param dst the destination IP address
    * \param origin the origin IP address
    */
-   BANTHeader (uint8_t hopCount = 0, uint32_t sequenceNo = 0, 
-              Ipv4Address dst = Ipv4Address (), 
+   BANTHeader (uint8_t flags = 0, uint8_t hopCount = 0, 
+              uint32_t sequenceNo = 0, Ipv4Address dst = Ipv4Address (), 
               Ipv4Address origin = Ipv4Address ());
 
   /**
@@ -334,12 +351,29 @@ public:
   {
     return m_origin;
   }
+  // Flags
+  /**
+   * \brief Set the Duplicate Error flag
+   * \param f the Duplicate Error flag
+   */
+  void SetDuplicateErr (bool f);
+  /**
+   * \brief Get the gratuitous RREP flag
+   * \return the gratuitous RREP flag
+   */
+  bool GetDuplicateErr () const;
+  /**
+   * \brief Set the Duplicate Error flag
+   * \param f the Duplicate Error flag
+   */
+
   bool operator== (BANTHeader const & o) const;
 private:
   uint8_t        m_hopCount;       ///< Hop Count
   uint32_t       m_sequenceNo;     ///< Sequence Number
   Ipv4Address    m_dst;            ///< Destination IP Address
   Ipv4Address    m_origin;         ///< Originator IP Address
+  uint8_t        m_flags;          ///< |D| bit flags
 };
 
 /**
