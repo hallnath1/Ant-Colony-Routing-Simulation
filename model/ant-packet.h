@@ -175,7 +175,7 @@ public:
    */
   void SetSequenceNo (uint32_t id)
   {
-    m_requestID = id;
+    m_sequenceNo = id;
   }
   /**
    * \brief Get the sequence number
@@ -183,7 +183,7 @@ public:
    */
   uint32_t GetSequenceNo () const
   {
-    return m_requestID;
+    return m_sequenceNo;
   }
   /**
    * \brief Set the destination address
@@ -213,7 +213,7 @@ public:
   {
     return m_origin;
   }
-  bool operator== (FANTHeader const & o) const;
+  bool operator== (BANTHeader const & o) const;
 private:
   uint8_t        m_hopCount;       ///< Hop Count
   uint32_t       m_sequenceNo;     ///< Sequence Number
@@ -226,45 +226,44 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, RreqHeader const &);
+std::ostream & operator<< (std::ostream & os, BANTHeader const &);
 
 /**
-* \ingroup aodv
-* \brief Route Reply (RREP) Message Format
+* \ingroup ant
+* \brief   Forward Ant (BANT) Message Format
   \verbatim
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |R|A|    Reserved     |Prefix Sz|   Hop Count   |
+  |     Type      |            Reserved           |   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                     Destination IP address                    |
+  |                     BANT Sequence Number                      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                  Destination Sequence Number                  |
+  |                    Destination IP Address                     |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    Originator IP address                      |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                           Lifetime                            |
+  |                    Originator IP Address                      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class RrepHeader : public Header
+class BANTHeader : public Header
 {
 public:
   /**
    * constructor
    *
-   * \param prefixSize the prefix size (0)
-   * \param hopCount the hop count (0)
+   * \param flags the message flags (0)
+   * \param reserved the reserved bits (0)
+   * \param hopCount the hop count
+   * \param sequenceNo the sequence number
    * \param dst the destination IP address
-   * \param dstSeqNo the destination sequence number
    * \param origin the origin IP address
-   * \param lifetime the lifetime
    */
-  RrepHeader (uint8_t prefixSize = 0, uint8_t hopCount = 0, Ipv4Address dst =
-                Ipv4Address (), uint32_t dstSeqNo = 0, Ipv4Address origin =
-                Ipv4Address (), Time lifetime = MilliSeconds (0));
+   BANTHeader (uint8_t hopCount = 0, uint32_t sequenceNo = 0, 
+              Ipv4Address dst = Ipv4Address (), 
+              Ipv4Address origin = Ipv4Address ());
+
   /**
-   * \brief Get the type ID.
+   * \brief Get the sequenceNo.
    * \return the object TypeId
    */
   static TypeId GetTypeId ();
@@ -292,6 +291,22 @@ public:
     return m_hopCount;
   }
   /**
+   * \brief Set the sequence number
+   * \param id the sequence number
+   */
+  void SetSequenceNo (uint32_t id)
+  {
+    m_sequenceNo = id;
+  }
+  /**
+   * \brief Get the sequence number
+   * \return the sequence number
+   */
+  uint32_t GetSequenceNo () const
+  {
+    return m_sequenceNo;
+  }
+  /**
    * \brief Set the destination address
    * \param a the destination address
    */
@@ -307,26 +322,6 @@ public:
   {
     return m_dst;
   }
-  /**
-   * \brief Set the destination sequence number
-   * \param s the destination sequence number
-   */
-  void SetDstSeqno (uint32_t s)
-  {
-    m_dstSeqNo = s;
-  }
-  /**
-   * \brief Get the destination sequence number
-   * \return the destination sequence number
-   */
-  uint32_t GetDstSeqno () const
-  {
-    return m_dstSeqNo;
-  }
-  /**
-   * \brief Set the origin address
-   * \param a the origin address
-   */
   void SetOrigin (Ipv4Address a)
   {
     m_origin = a;
@@ -339,62 +334,12 @@ public:
   {
     return m_origin;
   }
-  /**
-   * \brief Set the lifetime
-   * \param t the lifetime
-   */
-  void SetLifeTime (Time t);
-  /**
-   * \brief Get the lifetime
-   * \return the lifetime
-   */
-  Time GetLifeTime () const;
-
-  // Flags
-  /**
-   * \brief Set the ack required flag
-   * \param f the ack required flag
-   */
-  void SetAckRequired (bool f);
-  /**
-   * \brief get the ack required flag
-   * \return the ack required flag
-   */
-  bool GetAckRequired () const;
-  /**
-   * \brief Set the prefix size
-   * \param sz the prefix size
-   */
-  void SetPrefixSize (uint8_t sz);
-  /**
-   * \brief Set the pefix size
-   * \return the prefix size
-   */
-  uint8_t GetPrefixSize () const;
-
-  /**
-   * Configure RREP to be a Hello message
-   *
-   * \param src the source IP address
-   * \param srcSeqNo the source sequence number
-   * \param lifetime the lifetime of the message
-   */
-  void SetHello (Ipv4Address src, uint32_t srcSeqNo, Time lifetime);
-
-  /**
-   * \brief Comparison operator
-   * \param o RREP header to compare
-   * \return true if the RREP headers are equal
-   */
-  bool operator== (RrepHeader const & o) const;
+  bool operator== (BANTHeader const & o) const;
 private:
-  uint8_t       m_flags;                  ///< A - acknowledgment required flag
-  uint8_t       m_prefixSize;         ///< Prefix Size
-  uint8_t             m_hopCount;         ///< Hop Count
-  Ipv4Address   m_dst;              ///< Destination IP Address
-  uint32_t      m_dstSeqNo;         ///< Destination Sequence Number
-  Ipv4Address     m_origin;           ///< Source IP Address
-  uint32_t      m_lifeTime;         ///< Lifetime (in milliseconds)
+  uint8_t        m_hopCount;       ///< Hop Count
+  uint32_t       m_sequenceNo;     ///< Sequence Number
+  Ipv4Address    m_dst;            ///< Destination IP Address
+  Ipv4Address    m_origin;         ///< Originator IP Address
 };
 
 /**
@@ -402,7 +347,7 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, RrepHeader const &);
+std::ostream & operator<< (std::ostream & os, BANTHeader const &);
 
 /**
 * \ingroup aodv

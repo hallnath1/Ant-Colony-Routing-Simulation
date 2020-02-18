@@ -137,7 +137,7 @@ operator<< (std::ostream & os, TypeHeader const & h)
 }
 
 //-----------------------------------------------------------------------------
-// RREQ
+// FANT
 //-----------------------------------------------------------------------------
 FANTHeader::FANTHeader (uint8_t hopCount, uint32_t sequenceNo, Ipv4Address dst,
                         Ipv4Address origin)
@@ -219,70 +219,60 @@ FANTHeader::operator== (FANTHeader const & o) const
 }
 
 //-----------------------------------------------------------------------------
-// RREP
+// BANT
 //-----------------------------------------------------------------------------
-
-RrepHeader::RrepHeader (uint8_t prefixSize, uint8_t hopCount, Ipv4Address dst,
-                        uint32_t dstSeqNo, Ipv4Address origin, Time lifeTime)
-  : m_flags (0),
-    m_prefixSize (prefixSize),
+BANTHeader::BANTHeader (uint8_t hopCount, uint32_t sequenceNo, Ipv4Address dst,
+                        Ipv4Address origin)
+  : 
     m_hopCount (hopCount),
+    m_sequenceNo (sequenceNo),
     m_dst (dst),
-    m_dstSeqNo (dstSeqNo),
     m_origin (origin)
 {
-  m_lifeTime = uint32_t (lifeTime.GetMilliSeconds ());
 }
 
-NS_OBJECT_ENSURE_REGISTERED (RrepHeader);
+NS_OBJECT_ENSURE_REGISTERED (BANTHeader);
 
 TypeId
-RrepHeader::GetTypeId ()
+BANTHeader::GetTypeId ()
 {
-  static TypeId tid = TypeId ("ns3::ant::RrepHeader")
+  static TypeId tid = TypeId ("ns3::ant::RreqHeader")
     .SetParent<Header> ()
     .SetGroupName ("Ant")
-    .AddConstructor<RrepHeader> ()
+    .AddConstructor<BANTHeader> ()
   ;
   return tid;
 }
 
 TypeId
-RrepHeader::GetInstanceTypeId () const
+BANTHeader::GetInstanceTypeId () const
 {
   return GetTypeId ();
 }
 
 uint32_t
-RrepHeader::GetSerializedSize () const
+BANTHeader::GetSerializedSize () const
 {
-  return 19;
+  return 23;
 }
 
 void
-RrepHeader::Serialize (Buffer::Iterator i) const
+BANTHeader::Serialize (Buffer::Iterator i) const
 {
-  i.WriteU8 (m_flags);
-  i.WriteU8 (m_prefixSize);
   i.WriteU8 (m_hopCount);
+  i.WriteHtonU32 (m_sequenceNo);
   WriteTo (i, m_dst);
-  i.WriteHtonU32 (m_dstSeqNo);
   WriteTo (i, m_origin);
-  i.WriteHtonU32 (m_lifeTime);
 }
 
 uint32_t
-RrepHeader::Deserialize (Buffer::Iterator start)
+BANTHeader::Deserialize (Buffer::Iterator start)
 {
   Buffer::Iterator i = start;
-
-  m_flags = i.ReadU8 ();
-  m_prefixSize = i.ReadU8 ();
   m_hopCount = i.ReadU8 ();
+  m_sequenceNo = i.ReadNtohU32 ();
   ReadFrom (i, m_dst);
-  m_dstSeqNo = i.ReadNtohU32 ();
   ReadFrom (i, m_origin);
-  m_lifeTime = i.ReadNtohU32 ();
 
   uint32_t dist = i.GetDistanceFrom (start);
   NS_ASSERT (dist == GetSerializedSize ());
@@ -290,87 +280,26 @@ RrepHeader::Deserialize (Buffer::Iterator start)
 }
 
 void
-RrepHeader::Print (std::ostream &os) const
+BANTHeader::Print (std::ostream &os) const
 {
-  os << "destination: ipv4 " << m_dst << " sequence number " << m_dstSeqNo;
-  if (m_prefixSize != 0)
-    {
-      os << " prefix size " << m_prefixSize;
-    }
-  os << " source ipv4 " << m_origin << " lifetime " << m_lifeTime
-     << " acknowledgment required flag " << (*this).GetAckRequired ();
-}
-
-void
-RrepHeader::SetLifeTime (Time t)
-{
-  m_lifeTime = t.GetMilliSeconds ();
-}
-
-Time
-RrepHeader::GetLifeTime () const
-{
-  Time t (MilliSeconds (m_lifeTime));
-  return t;
-}
-
-void
-RrepHeader::SetAckRequired (bool f)
-{
-  if (f)
-    {
-      m_flags |= (1 << 6);
-    }
-  else
-    {
-      m_flags &= ~(1 << 6);
-    }
-}
-
-bool
-RrepHeader::GetAckRequired () const
-{
-  return (m_flags & (1 << 6));
-}
-
-void
-RrepHeader::SetPrefixSize (uint8_t sz)
-{
-  m_prefixSize = sz;
-}
-
-uint8_t
-RrepHeader::GetPrefixSize () const
-{
-  return m_prefixSize;
-}
-
-bool
-RrepHeader::operator== (RrepHeader const & o) const
-{
-  return (m_flags == o.m_flags && m_prefixSize == o.m_prefixSize
-          && m_hopCount == o.m_hopCount && m_dst == o.m_dst && m_dstSeqNo == o.m_dstSeqNo
-          && m_origin == o.m_origin && m_lifeTime == o.m_lifeTime);
-}
-
-void
-RrepHeader::SetHello (Ipv4Address origin, uint32_t srcSeqNo, Time lifetime)
-{
-  m_flags = 0;
-  m_prefixSize = 0;
-  m_hopCount = 0;
-  m_dst = origin;
-  m_dstSeqNo = srcSeqNo;
-  m_origin = origin;
-  m_lifeTime = lifetime.GetMilliSeconds ();
+  os << "BANT Sequence No " << m_sequenceNo << " destination: ipv4 " << m_dst
+     << " source: ipv4 " << m_origin;
 }
 
 std::ostream &
-operator<< (std::ostream & os, RrepHeader const & h)
+operator<< (std::ostream & os, BANTHeader const & h)
 {
   h.Print (os);
   return os;
 }
+
+bool
+BANTHeader::operator== (BANTHeader const & o) const
+{
+  return (m_hopCount == o.m_hopCount && m_sequenceNo == o.m_sequenceNo
+          && m_dst == o.m_dst && m_origin == o.m_origin);
+}
+
 
 //-----------------------------------------------------------------------------
 // RREP-ACK
