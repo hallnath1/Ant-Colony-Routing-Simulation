@@ -46,7 +46,7 @@ enum MessageType
 {
   ARATYPE_FANT  = 1,   //!< ARATYPE_FANT
   ARATYPE_BANT  = 2,   //!< ARATYPE_BANT
-  ARATYPE_DUPLI_ERR  = 3,   //!< ARATYPE_DUPLI_ERR
+  ARATYPE_FANT_ACK = 3, //!< ARATYPE_FANT_ACK
   ARATYPE_ROUTE_ERR = 4 //!< ARATYPE_ROUTE_ERR
 };
 
@@ -384,8 +384,8 @@ private:
 std::ostream & operator<< (std::ostream & os, BANTHeader const &);
 
 /**
-* \ingroup aodv
-* \brief Route Reply Acknowledgment (RREP-ACK) Message Format
+* \ingroup ant
+* \brief FANT Acknowledgment (FANT-ACK) Message Format
   \verbatim
   0                   1
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
@@ -394,11 +394,11 @@ std::ostream & operator<< (std::ostream & os, BANTHeader const &);
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class RrepAckHeader : public Header
+class FANTAckHeader : public Header
 {
 public:
   /// constructor
-  RrepAckHeader ();
+  FANTAckHeader ();
 
   /**
    * \brief Get the type ID.
@@ -416,7 +416,7 @@ public:
    * \param o RREP header to compare
    * \return true if the RREQ headers are equal
    */
-  bool operator== (RrepAckHeader const & o) const;
+  bool operator== (FANTAckHeader const & o) const;
 private:
   uint8_t       m_reserved; ///< Not used (must be 0)
 };
@@ -426,7 +426,7 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, RrepAckHeader const &);
+std::ostream & operator<< (std::ostream & os, FANTAckHeader const &);
 
 
 /**

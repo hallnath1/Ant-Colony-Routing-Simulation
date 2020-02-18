@@ -79,7 +79,6 @@ TypeHeader::Deserialize (Buffer::Iterator start)
     {
     case ARATYPE_FANT:
     case ARATYPE_BANT:
-    case ARATYPE_DUPLI_ERR:
     case ARATYPE_ROUTE_ERR:
       {
         m_type = (MessageType) type;
@@ -106,11 +105,6 @@ TypeHeader::Print (std::ostream &os) const
     case ARATYPE_BANT:
       {
         os << "BANT";
-        break;
-      }
-    case ARATYPE_DUPLI_ERR:
-      {
-        os << "DUPLI_ERR";
         break;
       }
     case ARATYPE_ROUTE_ERR:
@@ -338,6 +332,74 @@ BANTHeader::operator== (BANTHeader const & o) const
           && m_dst == o.m_dst && m_origin == o.m_origin);
 }
 
+
+//-----------------------------------------------------------------------------
+// RREP-ACK
+//-----------------------------------------------------------------------------
+
+FANTAckHeader::FANTAckHeader ()
+  : m_reserved (0)
+{
+}
+
+NS_OBJECT_ENSURE_REGISTERED (FANTAckHeader);
+
+TypeId
+FANTAckHeader::GetTypeId ()
+{
+  static TypeId tid = TypeId ("ns3::aodv::FANTAckHeader")
+    .SetParent<Header> ()
+    .SetGroupName ("Ant")
+    .AddConstructor<FANTAckHeader> ()
+  ;
+  return tid;
+}
+
+TypeId
+FANTAckHeader::GetInstanceTypeId () const
+{
+  return GetTypeId ();
+}
+
+uint32_t
+FANTAckHeader::GetSerializedSize () const
+{
+  return 1;
+}
+
+void
+FANTAckHeader::Serialize (Buffer::Iterator i ) const
+{
+  i.WriteU8 (m_reserved);
+}
+
+uint32_t
+FANTAckHeader::Deserialize (Buffer::Iterator start )
+{
+  Buffer::Iterator i = start;
+  m_reserved = i.ReadU8 ();
+  uint32_t dist = i.GetDistanceFrom (start);
+  NS_ASSERT (dist == GetSerializedSize ());
+  return dist;
+}
+
+void
+FANTAckHeader::Print (std::ostream &os ) const
+{
+}
+
+bool
+FANTAckHeader::operator== (FANTAckHeader const & o ) const
+{
+  return m_reserved == o.m_reserved;
+}
+
+std::ostream &
+operator<< (std::ostream & os, FANTAckHeader const & h )
+{
+  h.Print (os);
+  return os;
+}
 
 //-----------------------------------------------------------------------------
 // RREP-ACK
