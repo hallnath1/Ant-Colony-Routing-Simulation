@@ -25,8 +25,8 @@
  * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef ANT_RQUEUE_H
-#define ANT_RQUEUE_H
+#ifndef ARA_RQUEUE_H
+#define ARA_RQUEUE_H
 
 #include <vector>
 #include "ns3/ipv4-routing-protocol.h"
@@ -34,7 +34,7 @@
 
 
 namespace ns3 {
-namespace ant {
+namespace ara {
 
 /**
  * \ingroup aodv
@@ -284,7 +284,7 @@ private:
 };
 
 
-}  // namespace ant
+}  // namespace aodv
 }  // namespace ns3
 
-#endif /* ANT_RQUEUE_H */
+#endif /* AODV_RQUEUE_H */

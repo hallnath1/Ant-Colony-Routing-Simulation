@@ -7,35 +7,35 @@
 #     conf.check_nonfatal(header_name='stdint.h', define_name='HAVE_STDINT_H')
 
 def build(bld):
-    module = bld.create_ns3_module('ant', ['internet', 'wifi'])
+    module = bld.create_ns3_module('ara', ['internet', 'wifi'])
     module.includes = '.'
     module.source = [
-        'model/ant-id-cache.cc',
-        'model/ant-dpd.cc',
-        'model/ant-rtable.cc',
-        'model/ant-rqueue.cc',
-        'model/ant-packet.cc',
-        'model/ant-neighbor.cc',
-        'model/ant-routing-protocol.cc',
-        'helper/ant-helper.cc',
+        'model/ara-id-cache.cc',
+        'model/ara-dpd.cc',
+        'model/ara-rtable.cc',
+        'model/ara-rqueue.cc',
+        'model/ara-packet.cc',
+        'model/ara-neighbor.cc',
+        'model/ara-routing-protocol.cc',
+        'helper/ara-helper.cc',
         ]
 
-    module_test = bld.create_ns3_module_test_library('ant')
+    module_test = bld.create_ns3_module_test_library('ara')
     module_test.source = [
-        'test/ant-test-suite.cc',
+        'test/ara-test-suite.cc',
         ]
  
     headers = bld(features='ns3header')
-    headers.module = 'ant'
+    headers.module = 'ara'
     headers.source = [
-        'model/ant-id-cache.h',
-        'model/ant-dpd.h',
-        'model/ant-rtable.h',
-        'model/ant-rqueue.h',
-        'model/ant-packet.h',
-        'model/ant-neighbor.h',
-        'model/ant-routing-protocol.h',
-        'helper/ant-helper.h',
+        'model/ara-id-cache.h',
+        'model/ara-dpd.h',
+        'model/ara-rtable.h',
+        'model/ara-rqueue.h',
+        'model/ara-packet.h',
+        'model/ara-neighbor.h',
+        'model/ara-routing-protocol.h',
+        'helper/ara-helper.h',
         ]
 
     if bld.env.ENABLE_EXAMPLES:

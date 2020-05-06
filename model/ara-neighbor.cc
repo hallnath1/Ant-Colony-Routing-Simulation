@@ -29,13 +29,13 @@
 #include <algorithm>
 #include "ns3/log.h"
 #include "ns3/wifi-mac-header.h"
-#include "ant-neighbor.h"
+#include "ara-neighbor.h"
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE ("AntNeighbors");
+NS_LOG_COMPONENT_DEFINE ("AraNeighbors");
 
-namespace ant {
+namespace ara {
 Neighbors::Neighbors (Time delay)
   : m_ntimer (Timer::CANCEL_ON_DESTROY)
 {

@@ -16,12 +16,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Based on
- *      NS-3 AODV implementation by Elena Buchatskaia and Pavel Boyko
+ *      NS-2 AODV model developed by the CMU/MONARCH group and optimized and
+ *      tuned by Samir Das and Mahesh Marina, University of Cincinnati;
  *
- * Author: Nathan Hall <n.hall.4@warwick.ac.uk>
+ *      AODV-UU implementation by Erik Nordström of Uppsala University
+ *      http://core.it.uu.se/core/index.php/AODV-UU
+ *
+ * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef ANTPACKET_H
-#define ANTPACKET_H
+#ifndef ARAPACKET_H
+#define ARAPACKET_H
 
 #include <iostream>
 #include "ns3/header.h"
@@ -31,23 +36,23 @@
 #include "ns3/nstime.h"
 
 namespace ns3 {
-namespace ant {
+namespace ara {
 
 /**
-* \ingroup ant
+* \ingroup ara
 * \brief MessageType enumeration
 */
 enum MessageType
 {
-  ARATYPE_FANT  = 1,   //!< ARATYPE_FANT
-  ARATYPE_BANT  = 2,   //!< ARATYPE_BANT
-  ARATYPE_FANT_ACK = 3, //!< ARATYPE_FANT_ACK
-  ARATYPE_RERR = 4 //!< ARATYPE_ROUTE_ERR
+  AODVTYPE_RREQ  = 1,   //!< AODVTYPE_RREQ
+  AODVTYPE_RREP  = 2,   //!< AODVTYPE_RREP
+  AODVTYPE_RERR  = 3,   //!< AODVTYPE_RERR
+  AODVTYPE_RREP_ACK = 4 //!< AODVTYPE_RREP_ACK
 };
 
 /**
-* \ingroup ant
-* \brief ANT types
+* \ingroup aodv
+* \brief AODV types
 */
 class TypeHeader : public Header
 {
@@ -56,7 +61,7 @@ public:
    * constructor
    * \param t the AODV RREQ type
    */
-  TypeHeader (MessageType t = ARATYPE_FANT);
+  TypeHeader (MessageType t = AODVTYPE_RREQ);
 
   /**
    * \brief Get the type ID.
@@ -103,23 +108,27 @@ private:
 std::ostream & operator<< (std::ostream & os, TypeHeader const & h);
 
 /**
-* \ingroup ant
-* \brief   Forward Ant (FANT) Message Format
+* \ingroup aodv
+* \brief   Route Request (RREQ) Message Format
   \verbatim
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |D|          Reserved           |   Hop Count   |
+  |     Type      |J|R|G|D|U|   Reserved          |   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                     FANT Sequence Number                      |
+  |                            RREQ ID                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                    Destination IP Address                     |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                  Destination Sequence Number                  |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                    Originator IP Address                      |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                  Originator Sequence Number                   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class FANTHeader : public Header
+class RreqHeader : public Header
 {
 public:
   /**
@@ -128,16 +137,19 @@ public:
    * \param flags the message flags (0)
    * \param reserved the reserved bits (0)
    * \param hopCount the hop count
-   * \param sequenceNo the sequence number
+   * \param requestID the request ID
    * \param dst the destination IP address
+   * \param dstSeqNo the destination sequence number
    * \param origin the origin IP address
+   * \param originSeqNo the origin sequence number
    */
-   FANTHeader (uint8_t flags = 0, uint8_t hopCount = 0, 
-              uint32_t sequenceNo = 0, Ipv4Address dst = Ipv4Address (), 
-              Ipv4Address origin = Ipv4Address ());
+   RreqHeader (uint8_t flags = 0, uint8_t reserved = 0, uint8_t hopCount = 0,
+              uint32_t requestID = 0, Ipv4Address dst = Ipv4Address (),
+              uint32_t dstSeqNo = 0, Ipv4Address origin = Ipv4Address (),
+              uint32_t originSeqNo = 0);
 
   /**
-   * \brief Get the sequenceNo.
+   * \brief Get the type ID.
    * \return the object TypeId
    */
   static TypeId GetTypeId ();
@@ -165,20 +177,20 @@ public:
     return m_hopCount;
   }
   /**
-   * \brief Set the sequence number
-   * \param id the sequence number
+   * \brief Set the request ID
+   * \param id the request ID
    */
-  void SetSequenceNo (uint32_t id)
+  void SetId (uint32_t id)
   {
-    m_sequenceNo = id;
+    m_requestID = id;
   }
   /**
-   * \brief Get the sequence number
-   * \return the sequence number
+   * \brief Get the request ID
+   * \return the request ID
    */
-  uint32_t GetSequenceNo () const
+  uint32_t GetId () const
   {
-    return m_sequenceNo;
+    return m_requestID;
   }
   /**
    * \brief Set the destination address
@@ -196,6 +208,26 @@ public:
   {
     return m_dst;
   }
+  /**
+   * \brief Set the destination sequence number
+   * \param s the destination sequence number
+   */
+  void SetDstSeqno (uint32_t s)
+  {
+    m_dstSeqNo = s;
+  }
+  /**
+   * \brief Get the destination sequence number
+   * \return the destination sequence number
+   */
+  uint32_t GetDstSeqno () const
+  {
+    return m_dstSeqNo;
+  }
+  /**
+   * \brief Set the origin address
+   * \param a the origin address
+   */
   void SetOrigin (Ipv4Address a)
   {
     m_origin = a;
@@ -208,29 +240,70 @@ public:
   {
     return m_origin;
   }
+  /**
+   * \brief Set the origin sequence number
+   * \param s the origin sequence number
+   */
+  void SetOriginSeqno (uint32_t s)
+  {
+    m_originSeqNo = s;
+  }
+  /**
+   * \brief Get the origin sequence number
+   * \return the origin sequence number
+   */
+  uint32_t GetOriginSeqno () const
+  {
+    return m_originSeqNo;
+  }
+
   // Flags
   /**
-   * \brief Set the Duplicate Error flag
-   * \param f the Duplicate Error flag
+   * \brief Set the gratuitous RREP flag
+   * \param f the gratuitous RREP flag
    */
-  void SetDuplicateErr (bool f);
+  void SetGratuitousRrep (bool f);
   /**
    * \brief Get the gratuitous RREP flag
    * \return the gratuitous RREP flag
    */
-  bool GetDuplicateErr () const;
+  bool GetGratuitousRrep () const;
   /**
-   * \brief Set the Duplicate Error flag
-   * \param f the Duplicate Error flag
+   * \brief Set the Destination only flag
+   * \param f the Destination only flag
    */
+  void SetDestinationOnly (bool f);
+  /**
+   * \brief Get the Destination only flag
+   * \return the Destination only flag
+   */
+  bool GetDestinationOnly () const;
+  /**
+   * \brief Set the unknown sequence number flag
+   * \param f the unknown sequence number flag
+   */
+  void SetUnknownSeqno (bool f);
+  /**
+   * \brief Get the unknown sequence number flag
+   * \return the unknown sequence number flag
+   */
+  bool GetUnknownSeqno () const;
 
-  bool operator== (FANTHeader const & o) const;
+  /**
+   * \brief Comparison operator
+   * \param o RREQ header to compare
+   * \return true if the RREQ headers are equal
+   */
+  bool operator== (RreqHeader const & o) const;
 private:
+  uint8_t        m_flags;          ///< |J|R|G|D|U| bit flags, see RFC
+  uint8_t        m_reserved;       ///< Not used (must be 0)
   uint8_t        m_hopCount;       ///< Hop Count
-  uint32_t       m_sequenceNo;     ///< Sequence Number
+  uint32_t       m_requestID;      ///< RREQ ID
   Ipv4Address    m_dst;            ///< Destination IP Address
+  uint32_t       m_dstSeqNo;       ///< Destination Sequence Number
   Ipv4Address    m_origin;         ///< Originator IP Address
-  uint8_t        m_flags;          ///< |D| bit flags
+  uint32_t       m_originSeqNo;    ///< Source Sequence Number
 };
 
 /**
@@ -238,44 +311,45 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, BANTHeader const &);
+std::ostream & operator<< (std::ostream & os, RreqHeader const &);
 
 /**
-* \ingroup ant
-* \brief   Forward Ant (BANT) Message Format
+* \ingroup aodv
+* \brief Route Reply (RREP) Message Format
   \verbatim
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |D|           Reserved          |   Hop Count   |
+  |     Type      |R|A|    Reserved     |Prefix Sz|   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                     BANT Sequence Number                      |
+  |                     Destination IP address                    |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    Destination IP Address                     |
+  |                  Destination Sequence Number                  |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    Originator IP Address                      |
+  |                    Originator IP address                      |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                           Lifetime                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class BANTHeader : public Header
+class RrepHeader : public Header
 {
 public:
   /**
    * constructor
    *
-   * \param flags the message flags (0)
-   * \param reserved the reserved bits (0)
-   * \param hopCount the hop count
-   * \param sequenceNo the sequence number
+   * \param prefixSize the prefix size (0)
+   * \param hopCount the hop count (0)
    * \param dst the destination IP address
+   * \param dstSeqNo the destination sequence number
    * \param origin the origin IP address
+   * \param lifetime the lifetime
    */
-   BANTHeader (uint8_t flags = 0, uint8_t hopCount = 0, 
-              uint32_t sequenceNo = 0, Ipv4Address dst = Ipv4Address (), 
-              Ipv4Address origin = Ipv4Address ());
-
+  RrepHeader (uint8_t prefixSize = 0, uint8_t hopCount = 0, Ipv4Address dst =
+                Ipv4Address (), uint32_t dstSeqNo = 0, Ipv4Address origin =
+                Ipv4Address (), Time lifetime = MilliSeconds (0));
   /**
-   * \brief Get the sequenceNo.
+   * \brief Get the type ID.
    * \return the object TypeId
    */
   static TypeId GetTypeId ();
@@ -303,22 +377,6 @@ public:
     return m_hopCount;
   }
   /**
-   * \brief Set the sequence number
-   * \param id the sequence number
-   */
-  void SetSequenceNo (uint32_t id)
-  {
-    m_sequenceNo = id;
-  }
-  /**
-   * \brief Get the sequence number
-   * \return the sequence number
-   */
-  uint32_t GetSequenceNo () const
-  {
-    return m_sequenceNo;
-  }
-  /**
    * \brief Set the destination address
    * \param a the destination address
    */
@@ -334,6 +392,26 @@ public:
   {
     return m_dst;
   }
+  /**
+   * \brief Set the destination sequence number
+   * \param s the destination sequence number
+   */
+  void SetDstSeqno (uint32_t s)
+  {
+    m_dstSeqNo = s;
+  }
+  /**
+   * \brief Get the destination sequence number
+   * \return the destination sequence number
+   */
+  uint32_t GetDstSeqno () const
+  {
+    return m_dstSeqNo;
+  }
+  /**
+   * \brief Set the origin address
+   * \param a the origin address
+   */
   void SetOrigin (Ipv4Address a)
   {
     m_origin = a;
@@ -346,29 +424,62 @@ public:
   {
     return m_origin;
   }
+  /**
+   * \brief Set the lifetime
+   * \param t the lifetime
+   */
+  void SetLifeTime (Time t);
+  /**
+   * \brief Get the lifetime
+   * \return the lifetime
+   */
+  Time GetLifeTime () const;
+
   // Flags
   /**
-   * \brief Set the Duplicate Error flag
-   * \param f the Duplicate Error flag
+   * \brief Set the ack required flag
+   * \param f the ack required flag
    */
-  void SetDuplicateErr (bool f);
+  void SetAckRequired (bool f);
   /**
-   * \brief Get the gratuitous RREP flag
-   * \return the gratuitous RREP flag
+   * \brief get the ack required flag
+   * \return the ack required flag
    */
-  bool GetDuplicateErr () const;
+  bool GetAckRequired () const;
   /**
-   * \brief Set the Duplicate Error flag
-   * \param f the Duplicate Error flag
+   * \brief Set the prefix size
+   * \param sz the prefix size
    */
+  void SetPrefixSize (uint8_t sz);
+  /**
+   * \brief Set the pefix size
+   * \return the prefix size
+   */
+  uint8_t GetPrefixSize () const;
 
-  bool operator== (BANTHeader const & o) const;
+  /**
+   * Configure RREP to be a Hello message
+   *
+   * \param src the source IP address
+   * \param srcSeqNo the source sequence number
+   * \param lifetime the lifetime of the message
+   */
+  void SetHello (Ipv4Address src, uint32_t srcSeqNo, Time lifetime);
+
+  /**
+   * \brief Comparison operator
+   * \param o RREP header to compare
+   * \return true if the RREP headers are equal
+   */
+  bool operator== (RrepHeader const & o) const;
 private:
-  uint8_t        m_hopCount;       ///< Hop Count
-  uint32_t       m_sequenceNo;     ///< Sequence Number
-  Ipv4Address    m_dst;            ///< Destination IP Address
-  Ipv4Address    m_origin;         ///< Originator IP Address
-  uint8_t        m_flags;          ///< |D| bit flags
+  uint8_t       m_flags;                  ///< A - acknowledgment required flag
+  uint8_t       m_prefixSize;         ///< Prefix Size
+  uint8_t             m_hopCount;         ///< Hop Count
+  Ipv4Address   m_dst;              ///< Destination IP Address
+  uint32_t      m_dstSeqNo;         ///< Destination Sequence Number
+  Ipv4Address     m_origin;           ///< Source IP Address
+  uint32_t      m_lifeTime;         ///< Lifetime (in milliseconds)
 };
 
 /**
@@ -376,11 +487,11 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, BANTHeader const &);
+std::ostream & operator<< (std::ostream & os, RrepHeader const &);
 
 /**
-* \ingroup ant
-* \brief FANT Acknowledgment (FANT-ACK) Message Format
+* \ingroup aodv
+* \brief Route Reply Acknowledgment (RREP-ACK) Message Format
   \verbatim
   0                   1
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
@@ -389,11 +500,11 @@ std::ostream & operator<< (std::ostream & os, BANTHeader const &);
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class FANTAckHeader : public Header
+class RrepAckHeader : public Header
 {
 public:
   /// constructor
-  FANTAckHeader ();
+  RrepAckHeader ();
 
   /**
    * \brief Get the type ID.
@@ -411,7 +522,7 @@ public:
    * \param o RREP header to compare
    * \return true if the RREQ headers are equal
    */
-  bool operator== (FANTAckHeader const & o) const;
+  bool operator== (RrepAckHeader const & o) const;
 private:
   uint8_t       m_reserved; ///< Not used (must be 0)
 };
@@ -421,10 +532,11 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, FANTAckHeader const &);
+std::ostream & operator<< (std::ostream & os, RrepAckHeader const &);
+
 
 /**
-* \ingroup ant
+* \ingroup aodv
 * \brief Route Error (RERR) Message Format
   \verbatim
   0                   1                   2                   3
@@ -433,6 +545,12 @@ std::ostream & operator<< (std::ostream & os, FANTAckHeader const &);
   |     Type      |N|          Reserved           |   DestCount   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |            Unreachable Destination IP Address (1)             |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |         Unreachable Destination Sequence Number (1)           |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-|
+  |  Additional Unreachable Destination IP Addresses (if needed)  |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |Additional Unreachable Destination Sequence Numbers (if needed)|
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
@@ -466,6 +584,29 @@ public:
   bool GetNoDelete () const;
 
   /**
+   * \brief Add unreachable node address and its sequence number in RERR header
+   * \param dst unreachable IPv4 address
+   * \param seqNo unreachable sequence number
+   * \return false if we already added maximum possible number of unreachable destinations
+   */
+  bool AddUnDestination (Ipv4Address dst, uint32_t seqNo);
+  /**
+   * \brief Delete pair (address + sequence number) from REER header, if the number of unreachable destinations > 0
+   * \param un unreachable pair (address + sequence number)
+   * \return true on success
+   */
+  bool RemoveUnDestination (std::pair<Ipv4Address, uint32_t> & un);
+  /// Clear header
+  void Clear ();
+  /**
+   * \returns number of unreachable destinations in RERR message
+   */
+  uint8_t GetDestCount () const
+  {
+    return (uint8_t)m_unreachableDstSeqNo.size ();
+  }
+
+  /**
    * \brief Comparison operator
    * \param o RERR header to compare
    * \return true if the RERR headers are equal
@@ -474,7 +615,9 @@ public:
 private:
   uint8_t m_flag;            ///< No delete flag
   uint8_t m_reserved;        ///< Not used (must be 0)
-  Ipv4Address m_unreachableDst; ///< Unreachable IP address
+
+  /// List of Unreachable destination: IP addresses and sequence numbers
+  std::map<Ipv4Address, uint32_t> m_unreachableDstSeqNo;
 };
 
 /**
@@ -484,8 +627,7 @@ private:
   */
 std::ostream & operator<< (std::ostream & os, RerrHeader const &);
 
-
 }  // namespace aodv
 }  // namespace ns3
 
-#endif /* ANTPACKET_H */
+#endif /* AODVPACKET_H */

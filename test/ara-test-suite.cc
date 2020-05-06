@@ -1,7 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 // Include a header file from your module to test.
-#include "ns3/ant.h"
+#include "ns3/ara.h"
 
 // An essential include is test.h
 #include "ns3/test.h"
@@ -11,25 +11,25 @@
 using namespace ns3;
 
 // This is an example TestCase.
-class AntTestCase1 : public TestCase
+class AraTestCase1 : public TestCase
 {
 public:
-  AntTestCase1 ();
-  virtual ~AntTestCase1 ();
+  AraTestCase1 ();
+  virtual ~AraTestCase1 ();
 
 private:
   virtual void DoRun (void);
 };
 
 // Add some help text to this case to describe what it is intended to test
-AntTestCase1::AntTestCase1 ()
-  : TestCase ("Ant test case (does nothing)")
+AraTestCase1::AraTestCase1 ()
+  : TestCase ("Ara test case (does nothing)")
 {
 }
 
 // This destructor does nothing but we include it as a reminder that
 // the test case should clean up after itself
-AntTestCase1::~AntTestCase1 ()
+AraTestCase1::~AraTestCase1 ()
 {
 }
 
@@ -38,7 +38,7 @@ AntTestCase1::~AntTestCase1 ()
 // TestCase must implement
 //
 void
-AntTestCase1::DoRun (void)
+AraTestCase1::DoRun (void)
 {
   // A wide variety of test macros are available in src/core/test.h
   NS_TEST_ASSERT_MSG_EQ (true, true, "true doesn't equal true for some reason");
@@ -50,19 +50,19 @@ AntTestCase1::DoRun (void)
 // and enables the TestCases to be run.  Typically, only the constructor for
 // this class must be defined
 //
-class AntTestSuite : public TestSuite
+class AraTestSuite : public TestSuite
 {
 public:
-  AntTestSuite ();
+  AraTestSuite ();
 };
 
-AntTestSuite::AntTestSuite ()
-  : TestSuite ("ant", UNIT)
+AraTestSuite::AraTestSuite ()
+  : TestSuite ("ara", UNIT)
 {
   // TestDuration for TestCase can be QUICK, EXTENSIVE or TAKES_FOREVER
-  AddTestCase (new AntTestCase1, TestCase::QUICK);
+  AddTestCase (new AraTestCase1, TestCase::QUICK);
 }
 
 // Do not forget to allocate an instance of this TestSuite
-static AntTestSuite antTestSuite;
+static AraTestSuite araTestSuite;
 

@@ -1,7 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
-#include "ant-helper.h"
-#include "ns3/ant-routing-protocol.h"
+#include "ara-helper.h"
+#include "ns3/ara-routing-protocol.h"
 #include "ns3/node-list.h"
 #include "ns3/names.h"
 #include "ns3/ptr.h"
@@ -10,34 +10,34 @@
 namespace ns3 
 {
 
-AntHelper::AntHelper() : 
+AraHelper::AraHelper() : 
   Ipv4RoutingHelper ()
 {
-  m_agentFactory.SetTypeId ("ns3::ant::RoutingProtocol");
+  m_agentFactory.SetTypeId ("ns3::ara::RoutingProtocol");
 }
 
-AntHelper* 
-AntHelper::Copy (void) const 
+AraHelper* 
+AraHelper::Copy (void) const 
 {
-  return new AntHelper (*this); 
+  return new AraHelper (*this); 
 }
 
 Ptr<Ipv4RoutingProtocol> 
-AntHelper::Create (Ptr<Node> node) const
+AraHelper::Create (Ptr<Node> node) const
 {
-  Ptr<ant::RoutingProtocol> agent = m_agentFactory.Create<ant::RoutingProtocol> ();
+  Ptr<ara::RoutingProtocol> agent = m_agentFactory.Create<ara::RoutingProtocol> ();
   node->AggregateObject (agent);
   return agent;
 }
 
 void 
-AntHelper::Set (std::string name, const AttributeValue &value)
+AraHelper::Set (std::string name, const AttributeValue &value)
 {
   m_agentFactory.Set (name, value);
 }
 
 int64_t
-AntHelper::AssignStreams (NodeContainer c, int64_t stream)
+AraHelper::AssignStreams (NodeContainer c, int64_t stream)
 {
   int64_t currentStream = stream;
   Ptr<Node> node;
@@ -48,26 +48,26 @@ AntHelper::AssignStreams (NodeContainer c, int64_t stream)
       NS_ASSERT_MSG (ipv4, "Ipv4 not installed on node");
       Ptr<Ipv4RoutingProtocol> proto = ipv4->GetRoutingProtocol ();
       NS_ASSERT_MSG (proto, "Ipv4 routing not installed on node");
-      Ptr<ant::RoutingProtocol> ant = DynamicCast<ant::RoutingProtocol> (proto);
-      if (ant)
+      Ptr<ara::RoutingProtocol> ara = DynamicCast<ara::RoutingProtocol> (proto);
+      if (ara)
         {
-          currentStream += ant->AssignStreams (currentStream);
+          currentStream += ara->AssignStreams (currentStream);
           continue;
         }
-      // Ant may also be in a list
+      // Ara may also be in a list
       Ptr<Ipv4ListRouting> list = DynamicCast<Ipv4ListRouting> (proto);
       if (list)
         {
           int16_t priority;
           Ptr<Ipv4RoutingProtocol> listProto;
-          Ptr<ant::RoutingProtocol> listAnt;
+          Ptr<ara::RoutingProtocol> listAra;
           for (uint32_t i = 0; i < list->GetNRoutingProtocols (); i++)
             {
               listProto = list->GetRoutingProtocol (i, priority);
-              listAnt = DynamicCast<ant::RoutingProtocol> (listProto);
-              if (listAnt)
+              listAra = DynamicCast<ara::RoutingProtocol> (listProto);
+              if (listAra)
                 {
-                  currentStream += listAnt->AssignStreams (currentStream);
+                  currentStream += listAra->AssignStreams (currentStream);
                   break;
                 }
             }
@@ -75,4 +75,8 @@ AntHelper::AssignStreams (NodeContainer c, int64_t stream)
     }
   return (currentStream - stream);
 }
+
+
+
 }
+

@@ -15,34 +15,51 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ * Based on
+ *      NS-2 AODV model developed by the CMU/MONARCH group and optimized and
+ *      tuned by Samir Das and Mahesh Marina, University of Cincinnati;
+ *
  *
  * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-
-#include "ant-dpd.h"
+#include "ara-id-cache.h"
+#include <algorithm>
 
 namespace ns3 {
-namespace ant {
-
+namespace ara {
 bool
-DuplicatePacketDetection::IsDuplicate  (Ptr<const Packet> p, const Ipv4Header & header)
+IdCache::IsDuplicate (Ipv4Address addr, uint32_t id)
 {
-  return m_idCache.IsDuplicate (header.GetSource (), p->GetUid () );
+  Purge ();
+  for (std::vector<UniqueId>::const_iterator i = m_idCache.begin ();
+       i != m_idCache.end (); ++i)
+    {
+      if (i->m_context == addr && i->m_id == id)
+        {
+          return true;
+        }
+    }
+  struct UniqueId uniqueId =
+  {
+    addr, id, m_lifetime + Simulator::Now ()
+  };
+  m_idCache.push_back (uniqueId);
+  return false;
 }
 void
-DuplicatePacketDetection::SetLifetime (Time lifetime)
+IdCache::Purge ()
 {
-  m_idCache.SetLifetime (lifetime);
+  m_idCache.erase (remove_if (m_idCache.begin (), m_idCache.end (),
+                              IsExpired ()), m_idCache.end ());
 }
 
-Time
-DuplicatePacketDetection::GetLifetime () const
+uint32_t
+IdCache::GetSize ()
 {
-  return m_idCache.GetLifeTime ();
+  Purge ();
+  return m_idCache.size ();
 }
 
-
 }
 }
-

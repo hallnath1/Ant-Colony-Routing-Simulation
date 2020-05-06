@@ -20,18 +20,18 @@
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#ifndef ANT_DPD_H
-#define ANT_DPD_H
+#ifndef ARA_DPD_H
+#define ARA_DPD_H
 
-#include "ant-id-cache.h"
+#include "ara-id-cache.h"
 #include "ns3/nstime.h"
 #include "ns3/packet.h"
 #include "ns3/ipv4-header.h"
 
 namespace ns3 {
-namespace ant {
+namespace ara {
 /**
- * \ingroup ant
+ * \ingroup ara
  *
  * \brief Helper class used to remember already seen packets and detect duplicates.
  *
@@ -73,4 +73,4 @@ private:
 }
 }
 
-#endif /* ANT_DPD_H */
+#endif /* ARA_DPD_H */

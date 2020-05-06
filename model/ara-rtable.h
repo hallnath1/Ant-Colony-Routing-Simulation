@@ -25,8 +25,8 @@
  * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef ANT_RTABLE_H
-#define ANT_RTABLE_H
+#ifndef ARA_RTABLE_H
+#define ARA_RTABLE_H
 
 #include <stdint.h>
 #include <cassert>
@@ -39,10 +39,10 @@
 #include "ns3/output-stream-wrapper.h"
 
 namespace ns3 {
-namespace ant {
+namespace ara {
 
 /**
- * \ingroup ant
+ * \ingroup aodv
  * \brief Route record states
  */
 enum RouteFlags
@@ -53,7 +53,7 @@ enum RouteFlags
 };
 
 /**
- * \ingroup ant
+ * \ingroup aodv
  * \brief Routing table entry
  */
 class RoutingTableEntry
@@ -64,12 +64,14 @@ public:
    *
    * \param dev the device
    * \param dst the destination IP address
+   * \param vSeqNo verify sequence number flag
+   * \param seqNo the sequence number
    * \param iface the interface
-   * \param pheromone the pheromone value
+   * \param pheromone the number of hops
    * \param nextHop the IP address of the next hop
    * \param lifetime the lifetime of the entry
    */
-  RoutingTableEntry (Ptr<NetDevice> dev = 0,Ipv4Address dst = Ipv4Address (),
+  RoutingTableEntry (Ptr<NetDevice> dev = 0,Ipv4Address dst = Ipv4Address (), bool vSeqNo = false, uint32_t seqNo = 0,
                      Ipv4InterfaceAddress iface = Ipv4InterfaceAddress (), uint16_t  pheromone = 0,
                      Ipv4Address nextHop = Ipv4Address (), Time lifetime = Simulator::Now ());
 
@@ -189,6 +191,54 @@ public:
     m_iface = iface;
   }
   /**
+   * Set the valid sequence number
+   * \param s the sequence number
+   */
+  void SetValidSeqNo (bool s)
+  {
+    m_validSeqNo = s;
+  }
+  /**
+   * Get the valid sequence number
+   * \returns the valid sequence number
+   */
+  bool GetValidSeqNo () const
+  {
+    return m_validSeqNo;
+  }
+  /**
+   * Set the sequence number
+   * \param sn the sequence number
+   */
+  void SetSeqNo (uint32_t sn)
+  {
+    m_seqNo = sn;
+  }
+  /**
+   * Get the sequence number
+   * \returns the sequence number
+   */
+  uint32_t GetSeqNo () const
+  {
+    return m_seqNo;
+  }
+  /**
+   * Set the pheromone value
+   * \param pheromone the number of hops
+   */
+  void SetPheromone (uint16_t pheromone)
+  {
+    m_pheromone = pheromone;
+  }
+  /**
+   * Get the pheromone value
+   * \returns the pheromone value
+   */
+  uint16_t GetPheromone () const
+  {
+    return m_pheromone;
+  }
+  /**
    * Set the lifetime
    * \param lt The lifetime
    */
@@ -224,24 +274,24 @@ public:
    * Set the RREQ count
    * \param n the RREQ count
    */
-  void SetPheromone (uint16_t n)
+  void SetRreqCnt (uint8_t n)
   {
-    m_pheromone = n;
+    m_reqCount = n;
   }
   /**
    * Get the RREQ count
    * \returns the RREQ count
    */
-  uint16_t GetPheromone () const
+  uint8_t GetRreqCnt () const
   {
-    return m_pheromone;
+    return m_reqCount;
   }
   /**
    * Increment the RREQ count
    */
-  void DecrementPheromone ()
+  void IncrementRreqCnt ()
   {
-    m_pheromone--;
+    m_reqCount++;
   }
   /**
    * Set the unidirectional flag
@@ -259,6 +309,10 @@ public:
   {
     return m_blackListState;
   }
+  /**
+   * Set the blacklist timeout
+   * \param t the blacklist timeout value
+   */
   void SetBlacklistTimeout (Time t)
   {
     m_blackListTimeout = t;
@@ -290,7 +344,11 @@ public:
   void Print (Ptr<OutputStreamWrapper> stream) const;
 
 private:
-  /// Hop Count (number of hops needed to reach destination)
+  /// Valid Destination Sequence Number flag
+  bool m_validSeqNo;
+  /// Destination Sequence Number, if m_validSeqNo = true
+  uint32_t m_seqNo;
+  /// Pheromone Count (number of hops needed to reach destination)
   uint16_t m_pheromone;
   /**
   * \brief Expiration or deletion time of the route
@@ -308,10 +366,15 @@ private:
   Ptr<Ipv4Route> m_ipv4Route;
   /// Output interface address
   Ipv4InterfaceAddress m_iface;
-  /// List of precursors
-  std::vector<Ipv4Address> m_precursorList;
   /// Routing flags: valid, invalid or in search
   RouteFlags m_flag;
+
+  /// List of precursors
+  std::vector<Ipv4Address> m_precursorList;
+  /// When I can send another request
+  Time m_routeRequestTimout;
+  /// Number of route requests
+  uint8_t m_reqCount;
   /// Indicate if this entry is in "blacklist"
   bool m_blackListState;
   /// Time for which the node is put into the blacklist
@@ -319,8 +382,8 @@ private:
 };
 
 /**
- * \ingroup ant
- * \brief The Routing table used by ARA protocol
+ * \ingroup aodv
+ * \brief The Routing table used by AODV protocol
  */
 class RoutingTable
 {
@@ -380,6 +443,13 @@ public:
    * \return true on success
    */
   bool SetEntryState (Ipv4Address dst, RouteFlags state);
+  /**
+   * Lookup routing entries with next hop Address dst and not empty list of precursors.
+   *
+   * \param nextHop the next hop IP address
+   * \param unreachable
+   */
+  void GetListOfDestinationWithNextHop (Ipv4Address nextHop, std::map<Ipv4Address, uint32_t> & unreachable);
   /**
    *   Update routing entries with this destination as follows:
    *  1. The destination sequence number of this routing entry, if it

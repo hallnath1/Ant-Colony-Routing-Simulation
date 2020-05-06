@@ -26,8 +26,8 @@
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#ifndef ANTNEIGHBOR_H
-#define ANTNEIGHBOR_H
+#ifndef ARANEIGHBOR_H
+#define ARANEIGHBOR_H
 
 #include <vector>
 #include "ns3/simulator.h"
@@ -40,12 +40,12 @@ namespace ns3 {
 
 class WifiMacHeader;
 
-namespace ant {
+namespace ara {
 
 class RoutingProtocol;
 
 /**
- * \ingroup ant
+ * \ingroup ara
  * \brief maintain list of active neighbors
  */
 class Neighbors

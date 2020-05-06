@@ -26,17 +26,17 @@
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#ifndef ANT_ID_CACHE_H
-#define ANT_ID_CACHE_H
+#ifndef ARA_ID_CACHE_H
+#define ARA_ID_CACHE_H
 
 #include "ns3/ipv4-address.h"
 #include "ns3/simulator.h"
 #include <vector>
 
 namespace ns3 {
-namespace ant {
+namespace ara {
 /**
- * \ingroup ant
+ * \ingroup ara
  *
  * \brief Unique packets identification cache used for simple duplicate detection.
  */
@@ -112,7 +112,7 @@ private:
   Time m_lifetime;
 };
 
-}  // namespace aodv
+}  // namespace ara
 }  // namespace ns3
 
-#endif /* AODV_ID_CACHE_H */
+#endif /* ARA_ID_CACHE_H */

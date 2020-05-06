@@ -20,7 +20,7 @@
  * Authors: Pavel Boyko <boyko@iitp.ru>
  */
 
-#include "ns3/ant-module.h"
+#include "ns3/ara-module.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
@@ -43,10 +43,10 @@ using namespace ns3;
  *
  * ping 10.0.0.4
  */
-class AntExample
+class AraExample
 {
   public:
-    AntExample ();
+    AraExample ();
     /// Configure script parameters, \return true on successful configuration
     bool Configure (int argc, char **argv);
     /// Run simulation
@@ -85,7 +85,7 @@ class AntExample
 
 int main (int argc, char **argv)
 {
-  AntExample sim;
+  AraExample sim;
   if (!sim.Configure (argc, argv))
     NS_FATAL_ERROR ("Configuration failed. Aborted.");
 
@@ -95,7 +95,7 @@ int main (int argc, char **argv)
 }
 
 //-----------------------------------------------------------------------------
-AntExample::AntExample () :
+AraExample::AraExample () :
   size (16),
   step (100),
   totalTime (10),
@@ -104,7 +104,7 @@ AntExample::AntExample () :
 {
 }
 
-bool AntExample::Configure (int argc, char **argv)
+bool AraExample::Configure (int argc, char **argv)
 {
 
   SeedManager::SetSeed (12345);
@@ -120,7 +120,7 @@ bool AntExample::Configure (int argc, char **argv)
   return true;
 }
 
-void AntExample::Run ()
+void AraExample::Run ()
 {
   CreateNodes ();
   CreateDevices ();
@@ -140,11 +140,11 @@ void AntExample::Run ()
   Simulator::Destroy ();
 }
 
-void AntExample::Report (std::ostream &)
+void AraExample::Report (std::ostream &)
 {
 }
 
-void AntExample::CreateNodes ()
+void AraExample::CreateNodes ()
 {
   std::cout << "Creating " << (unsigned)size << " nodes " << step << " m apart.\n";
   nodes.Create (size);
@@ -168,7 +168,7 @@ void AntExample::CreateNodes ()
   mobility.Install (nodes);
 }
 
-void AntExample::CreateDevices ()
+void AraExample::CreateDevices ()
 {
   WifiMacHelper wifiMac;
   wifiMac.SetType ("ns3::AdhocWifiMac");
@@ -181,16 +181,29 @@ void AntExample::CreateDevices ()
 
   if (pcap)
     {
-      wifiPhy.EnablePcapAll (std::string ("ant"));
+      wifiPhy.EnablePcapAll (std::string ("ara"));
     }
 }
 
-void AntExample::InstallInternetStack ()
+void AraExample::InstallInternetStack ()
 {
+  AraHelper ara;
+  InternetStackHelper stack;
+  stack.SetRoutingHelper (ara);
+  stack.Install (nodes);
+  Ipv4AddressHelper address;
+  address.SetBase ("10.0.0.0", "255.0.0.0");
+  interfaces = address.Assign (devices);
+
+  if (printRoutes)
+    {
+      Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> ("ara.routes", std::ios::out);
+      ara.PrintRoutingTableAllAt (Seconds (8), routingStream);
+    }
 }
 
 void
-AntExample::InstallApplications ()
+AraExample::InstallApplications ()
 {
   V4PingHelper ping (interfaces.GetAddress (size - 1));
   ping.SetAttribute ("Verbose", BooleanValue (true));

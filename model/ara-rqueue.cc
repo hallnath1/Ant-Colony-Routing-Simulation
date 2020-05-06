@@ -25,7 +25,7 @@
  * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#include "ant-rqueue.h"
+#include "ara-rqueue.h"
 #include <algorithm>
 #include <functional>
 #include "ns3/ipv4-route.h"
@@ -34,9 +34,9 @@
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE ("AntRequestQueue");
+NS_LOG_COMPONENT_DEFINE ("AraRequestQueue");
 
-namespace ant {
+namespace ara {
 uint32_t
 RequestQueue::GetSize ()
 {

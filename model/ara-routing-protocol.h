@@ -25,14 +25,14 @@
  * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef ANTROUTINGPROTOCOL_H
-#define ANTROUTINGPROTOCOL_H
+#ifndef ARAROUTINGPROTOCOL_H
+#define ARAROUTINGPROTOCOL_H
 
-#include "ant-rtable.h"
-#include "ant-rqueue.h"
-#include "ant-packet.h"
-#include "ant-neighbor.h"
-#include "ant-dpd.h"
+#include "ara-rtable.h"
+#include "ara-rqueue.h"
+#include "ara-packet.h"
+#include "ara-neighbor.h"
+#include "ara-dpd.h"
 #include "ns3/node.h"
 #include "ns3/random-variable-stream.h"
 #include "ns3/output-stream-wrapper.h"
@@ -42,11 +42,11 @@
 #include <map>
 
 namespace ns3 {
-namespace ant {
+namespace ara {
 /**
- * \ingroup ant
+ * \ingroup ara
  *
- * \brief Ant-Colony routing protocol
+ * \brief ARA protocol
  */
 class RoutingProtocol : public Ipv4RoutingProtocol
 {
@@ -56,7 +56,7 @@ public:
    * \return the object TypeId
    */
   static TypeId GetTypeId (void);
-  static const uint32_t ANT_PORT;
+  static const uint32_t AODV_PORT;
 
   /// constructor
   RoutingProtocol ();
@@ -410,7 +410,7 @@ private:
   Time m_lastBcastTime;
 };
 
-} //namespace ant
+} //namespace ara
 } //namespace ns3
 
-#endif /* ANTROUTINGPROTOCOL_H */
+#endif /* ARAROUTINGPROTOCOL_H */

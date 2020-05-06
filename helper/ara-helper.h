@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-#ifndef ANT_HELPER_H
-#define ANT_HELPER_H
+#ifndef ARA_HELPER_H
+#define ARA_HELPER_H
 
 #include "ns3/object-factory.h"
 #include "ns3/node.h"
@@ -10,22 +10,22 @@
 
 namespace ns3 {
 /**
- * \ingroup ant
+ * \ingroup ara
  * \brief Helper class that adds ant-colony routing to nodes.
  */
-class AntHelper : public Ipv4RoutingHelper
+class AraHelper : public Ipv4RoutingHelper
 {
 public:
-  AntHelper ();
+  AraHelper ();
 
   /**
-   * \returns pointer to clone of this AntHelper
+   * \returns pointer to clone of this AraHelper
    *
    * \internal
    * This method is mainly for internal use by the other helpers;
    * clients are expected to free the dynamic memory allocated by this method
    */
-  AntHelper* Copy (void) const;
+  AraHelper* Copy (void) const;
 
   /**
    * \param node the node on which the routing protocol will run
@@ -40,7 +40,7 @@ public:
    * \param name the name of the attribute to set
    * \param value the value of the attribute to set.
    *
-   * This method controls the attributes of ns3::ant::RoutingProtocol
+   * This method controls the attributes of ns3::ara::RoutingProtocol
    */
   void Set (std::string name, const AttributeValue &value);
   /**
@@ -63,4 +63,4 @@ private:
 
 } 
 
-#endif /* ANT_HELPER_H */
+#endif /* ARA_HELPER_H */
