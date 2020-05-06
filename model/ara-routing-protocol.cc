@@ -971,9 +971,9 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
     {
       m_rreqCount++;
     }
-  // Create RREQ header
-  RreqHeader rreqHeader;
-  rreqHeader.SetDst (dst);
+  // Create FANT header
+  FANTHeader fantHeader;
+  fantHeader.SetDst (dst);
 
   RoutingTableEntry rt;
   // Using the pheromone field in Routing Table to manage the expanding ring search
@@ -998,11 +998,11 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
         }
       if (rt.GetValidSeqNo ())
         {
-          rreqHeader.SetDstSeqno (rt.GetSeqNo ());
+          fantHeader.SetDstSeqno (rt.GetSeqNo ());
         }
       else
         {
-          rreqHeader.SetUnknownSeqno (true);
+          fantHeader.SetUnknownSeqno (true);
         }
       rt.SetPheromone (ttl);
       rt.SetFlag (IN_SEARCH);
@@ -1011,7 +1011,7 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
     }
   else
     {
-      rreqHeader.SetUnknownSeqno (true);
+      fantHeader.SetUnknownSeqno (true);
       Ptr<NetDevice> dev = 0;
       RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ dst, /*validSeqNo=*/ false, /*seqno=*/ 0,
                                               /*iface=*/ Ipv4InterfaceAddress (),/*pheromone=*/ ttl,
@@ -1027,34 +1027,34 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
 
   if (m_gratuitousReply)
     {
-      rreqHeader.SetGratuitousRrep (true);
+      fantHeader.SetGratuitousRrep (true);
     }
   if (m_destinationOnly)
     {
-      rreqHeader.SetDestinationOnly (true);
+      fantHeader.SetDestinationOnly (true);
     }
 
   m_seqNo++;
-  rreqHeader.SetOriginSeqno (m_seqNo);
+  fantHeader.SetOriginSeqno (m_seqNo);
   m_requestId++;
-  rreqHeader.SetId (m_requestId);
+  fantHeader.SetId (m_requestId);
 
-  // Send RREQ as subnet directed broadcast from each interface used by aodv
+  // Send FANT as subnet directed broadcast from each interface used by ara
   for (std::map<Ptr<Socket>, Ipv4InterfaceAddress>::const_iterator j =
          m_socketAddresses.begin (); j != m_socketAddresses.end (); ++j)
     {
       Ptr<Socket> socket = j->first;
       Ipv4InterfaceAddress iface = j->second;
 
-      rreqHeader.SetOrigin (iface.GetLocal ());
+      fantHeader.SetOrigin (iface.GetLocal ());
       m_rreqIdCache.IsDuplicate (iface.GetLocal (), m_requestId);
 
       Ptr<Packet> packet = Create<Packet> ();
       SocketIpTtlTag tag;
       tag.SetTtl (ttl);
       packet->AddPacketTag (tag);
-      packet->AddHeader (rreqHeader);
-      TypeHeader tHeader (AODVTYPE_RREQ);
+      packet->AddHeader (fantHeader);
+      TypeHeader tHeader (ARATYPE_FANT);
       packet->AddHeader (tHeader);
       // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
       Ipv4Address destination;
@@ -1066,7 +1066,7 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
         {
           destination = iface.GetBroadcast ();
         }
-      NS_LOG_DEBUG ("Send RREQ with id " << rreqHeader.GetId () << " to socket");
+      NS_LOG_DEBUG ("Send FANT with id " << fantHeader.GetId () << " to socket");
       m_lastBcastTime = Simulator::Now ();
       Simulator::Schedule (Time (MilliSeconds (m_uniformRandomVariable->GetInteger (0, 10))), &RoutingProtocol::SendTo, this, socket, packet, destination);
     }
@@ -1134,7 +1134,7 @@ RoutingProtocol::RecvAodv (Ptr<Socket> socket)
   NS_LOG_DEBUG ("AODV node " << this << " received a AODV packet from " << sender << " to " << receiver);
 
   UpdateRouteToNeighbor (sender, receiver);
-  TypeHeader tHeader (AODVTYPE_RREQ);
+  TypeHeader tHeader (ARATYPE_FANT);
   packet->RemoveHeader (tHeader);
   if (!tHeader.IsValid ())
     {
@@ -1143,12 +1143,12 @@ RoutingProtocol::RecvAodv (Ptr<Socket> socket)
     }
   switch (tHeader.Get ())
     {
-    case AODVTYPE_RREQ:
+    case ARATYPE_FANT:
       {
         RecvRequest (packet, receiver, sender);
         break;
       }
-    case AODVTYPE_RREP:
+    case ARATYPE_BANT:
       {
         RecvReply (packet, receiver, sender);
         break;
@@ -1220,44 +1220,44 @@ void
 RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address src)
 {
   NS_LOG_FUNCTION (this);
-  RreqHeader rreqHeader;
-  p->RemoveHeader (rreqHeader);
+  FANTHeader fantHeader;
+  p->RemoveHeader (fantHeader);
 
-  // A node ignores all RREQs received from any node in its blacklist
+  // A node ignores all FANT received from any node in its blacklist
   RoutingTableEntry toPrev;
   if (m_routingTable.LookupRoute (src, toPrev))
     {
       if (toPrev.IsUnidirectional ())
         {
-          NS_LOG_DEBUG ("Ignoring RREQ from node in blacklist");
+          NS_LOG_DEBUG ("Ignoring FANT from node in blacklist");
           return;
         }
     }
 
-  uint32_t id = rreqHeader.GetId ();
-  Ipv4Address origin = rreqHeader.GetOrigin ();
+  uint32_t id = fantHeader.GetId ();
+  Ipv4Address origin = fantHeader.GetOrigin ();
 
   /*
-   *  Node checks to determine whether it has received a RREQ with the same Originator IP Address and RREQ ID.
-   *  If such a RREQ has been received, the node silently discards the newly received RREQ.
+   *  Node checks to determine whether it has received a FANT with the same Originator IP Address and FANT ID.
+   *  If such a FANT has been received, the node silently discards the newly received FANT.
    */
   if (m_rreqIdCache.IsDuplicate (origin, id))
     {
-      NS_LOG_DEBUG ("Ignoring RREQ due to duplicate");
+      NS_LOG_DEBUG ("Ignoring FANT due to duplicate");
       return;
     }
 
-  // Increment RREQ hop count
-  uint8_t pheromone = rreqHeader.GetHopCount () + 1;
-  rreqHeader.SetHopCount (pheromone);
+  // Increment FANT hop count
+  uint8_t pheromone = fantHeader.GetPheromone () + 1;
+  fantHeader.SetPheromone (pheromone);
 
   /*
    *  When the reverse route is created or updated, the following actions on the route are also carried out:
-   *  1. the Originator Sequence Number from the RREQ is compared to the corresponding destination sequence number
+   *  1. the Originator Sequence Number from the FANT is compared to the corresponding destination sequence number
    *     in the route table entry and copied if greater than the existing value there
    *  2. the valid sequence number field is set to true;
-   *  3. the next hop in the routing table becomes the node from which the  RREQ was received
-   *  4. the hop count is copied from the Hop Count in the RREQ message;
+   *  3. the next hop in the routing table becomes the node from which the  FANT was received
+   *  4. the hop count is copied from the Hop Count in the FANT message;
    *  5. the Lifetime is set to be the maximum of (ExistingLifetime, MinimalLifetime), where
    *     MinimalLifetime = current time + 2*NetTraversalTime - 2*HopCount*NodeTraversalTime
    */
@@ -1265,7 +1265,7 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
   if (!m_routingTable.LookupRoute (origin, toOrigin))
     {
       Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (receiver));
-      RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ origin, /*validSeno=*/ true, /*seqNo=*/ rreqHeader.GetOriginSeqno (),
+      RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ origin, /*validSeno=*/ true, /*seqNo=*/ fantHeader.GetOriginSeqno (),
                                               /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (receiver), 0), /*pheromone=*/ pheromone,
                                               /*nextHop*/ src, /*timeLife=*/ Time ((2 * m_netTraversalTime - 2 * pheromone * m_nodeTraversalTime)));
       m_routingTable.AddRoute (newEntry);
@@ -1274,14 +1274,14 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
     {
       if (toOrigin.GetValidSeqNo ())
         {
-          if (int32_t (rreqHeader.GetOriginSeqno ()) - int32_t (toOrigin.GetSeqNo ()) > 0)
+          if (int32_t (fantHeader.GetOriginSeqno ()) - int32_t (toOrigin.GetSeqNo ()) > 0)
             {
-              toOrigin.SetSeqNo (rreqHeader.GetOriginSeqno ());
+              toOrigin.SetSeqNo (fantHeader.GetOriginSeqno ());
             }
         }
       else
         {
-          toOrigin.SetSeqNo (rreqHeader.GetOriginSeqno ());
+          toOrigin.SetSeqNo (fantHeader.GetOriginSeqno ());
         }
       toOrigin.SetValidSeqNo (true);
       toOrigin.SetNextHop (src);
@@ -1300,7 +1300,7 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
     {
       NS_LOG_DEBUG ("Neighbor:" << src << " not found in routing table. Creating an entry");
       Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (receiver));
-      RoutingTableEntry newEntry (dev, src, false, rreqHeader.GetOriginSeqno (),
+      RoutingTableEntry newEntry (dev, src, false, fantHeader.GetOriginSeqno (),
                                   m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (receiver), 0),
                                   1, src, m_activeRouteTimeout);
       m_routingTable.AddRoute (newEntry);
@@ -1309,7 +1309,7 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
     {
       toNeighbor.SetLifeTime (m_activeRouteTimeout);
       toNeighbor.SetValidSeqNo (false);
-      toNeighbor.SetSeqNo (rreqHeader.GetOriginSeqno ());
+      toNeighbor.SetSeqNo (fantHeader.GetOriginSeqno ());
       toNeighbor.SetFlag (VALID);
       toNeighbor.SetOutputDevice (m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (receiver)));
       toNeighbor.SetInterface (m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (receiver), 0));
@@ -1319,52 +1319,52 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
     }
   m_nb.Update (src, Time (m_allowedHelloLoss * m_helloInterval));
 
-  NS_LOG_LOGIC (receiver << " receive RREQ with pheromone count " << static_cast<uint32_t> (rreqHeader.GetHopCount ())
-                         << " ID " << rreqHeader.GetId ()
-                         << " to destination " << rreqHeader.GetDst ());
+  NS_LOG_LOGIC (receiver << " receive FANT with pheromone count " << static_cast<uint32_t> (fantHeader.GetPheromone ())
+                         << " ID " << fantHeader.GetId ()
+                         << " to destination " << fantHeader.GetDst ());
 
   //  A node generates a RREP if either:
   //  (i)  it is itself the destination,
-  if (IsMyOwnAddress (rreqHeader.GetDst ()))
+  if (IsMyOwnAddress (fantHeader.GetDst ()))
     {
       m_routingTable.LookupRoute (origin, toOrigin);
       NS_LOG_DEBUG ("Send reply since I am the destination");
-      SendReply (rreqHeader, toOrigin);
+      SendReply (fantHeader, toOrigin);
       return;
     }
   /*
    * (ii) or it has an active route to the destination, the destination sequence number in the node's existing route table entry for the destination
-   *      is valid and greater than or equal to the Destination Sequence Number of the RREQ, and the "destination only" flag is NOT set.
+   *      is valid and greater than or equal to the Destination Sequence Number of the FANT, and the "destination only" flag is NOT set.
    */
   RoutingTableEntry toDst;
-  Ipv4Address dst = rreqHeader.GetDst ();
+  Ipv4Address dst = fantHeader.GetDst ();
   if (m_routingTable.LookupRoute (dst, toDst))
     {
       /*
-       * Drop RREQ, This node RREP will make a loop.
+       * Drop FANT, This node RREP will make a loop.
        */
       if (toDst.GetNextHop () == src)
         {
-          NS_LOG_DEBUG ("Drop RREQ from " << src << ", dest next hop " << toDst.GetNextHop ());
+          NS_LOG_DEBUG ("Drop FANT from " << src << ", dest next hop " << toDst.GetNextHop ());
           return;
         }
       /*
        * The Destination Sequence number for the requested destination is set to the maximum of the corresponding value
-       * received in the RREQ message, and the destination sequence value currently maintained by the node for the requested destination.
+       * received in the FANT message, and the destination sequence value currently maintained by the node for the requested destination.
        * However, the forwarding node MUST NOT modify its maintained value for the destination sequence number, even if the value
-       * received in the incoming RREQ is larger than the value currently maintained by the forwarding node.
+       * received in the incoming FANT is larger than the value currently maintained by the forwarding node.
        */
-      if ((rreqHeader.GetUnknownSeqno () || (int32_t (toDst.GetSeqNo ()) - int32_t (rreqHeader.GetDstSeqno ()) >= 0))
+      if ((fantHeader.GetUnknownSeqno () || (int32_t (toDst.GetSeqNo ()) - int32_t (fantHeader.GetDstSeqno ()) >= 0))
           && toDst.GetValidSeqNo () )
         {
-          if (!rreqHeader.GetDestinationOnly () && toDst.GetFlag () == VALID)
+          if (!fantHeader.GetDestinationOnly () && toDst.GetFlag () == VALID)
             {
               m_routingTable.LookupRoute (origin, toOrigin);
-              SendReplyByIntermediateNode (toDst, toOrigin, rreqHeader.GetGratuitousRrep ());
+              SendReplyByIntermediateNode (toDst, toOrigin, fantHeader.GetGratuitousRrep ());
               return;
             }
-          rreqHeader.SetDstSeqno (toDst.GetSeqNo ());
-          rreqHeader.SetUnknownSeqno (false);
+          fantHeader.SetDstSeqno (toDst.GetSeqNo ());
+          fantHeader.SetUnknownSeqno (false);
         }
     }
 
@@ -1372,7 +1372,7 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
   p->RemovePacketTag (tag);
   if (tag.GetTtl () < 2)
     {
-      NS_LOG_DEBUG ("TTL exceeded. Drop RREQ origin " << src << " destination " << dst );
+      NS_LOG_DEBUG ("TTL exceeded. Drop FANT origin " << src << " destination " << dst );
       return;
     }
 
@@ -1385,8 +1385,8 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
       SocketIpTtlTag ttl;
       ttl.SetTtl (tag.GetTtl () - 1);
       packet->AddPacketTag (ttl);
-      packet->AddHeader (rreqHeader);
-      TypeHeader tHeader (AODVTYPE_RREQ);
+      packet->AddHeader (fantHeader);
+      TypeHeader tHeader (ARATYPE_FANT);
       packet->AddHeader (tHeader);
       // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
       Ipv4Address destination;
@@ -1405,25 +1405,25 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
 }
 
 void
-RoutingProtocol::SendReply (RreqHeader const & rreqHeader, RoutingTableEntry const & toOrigin)
+RoutingProtocol::SendReply (FANTHeader const & fantHeader, RoutingTableEntry const & toOrigin)
 {
   NS_LOG_FUNCTION (this << toOrigin.GetDestination ());
   /*
-   * Destination node MUST increment its own sequence number by one if the sequence number in the RREQ packet is equal to that
+   * Destination node MUST increment its own sequence number by one if the sequence number in the FANT packet is equal to that
    * incremented value. Otherwise, the destination does not change its sequence number before generating the  RREP message.
    */
-  if (!rreqHeader.GetUnknownSeqno () && (rreqHeader.GetDstSeqno () == m_seqNo + 1))
+  if (!fantHeader.GetUnknownSeqno () && (fantHeader.GetDstSeqno () == m_seqNo + 1))
     {
       m_seqNo++;
     }
-  RrepHeader rrepHeader ( /*prefixSize=*/ 0, /*pheromone=*/ 0, /*dst=*/ rreqHeader.GetDst (),
+  BANTHeader bantHeader ( /*prefixSize=*/ 0, /*pheromone=*/ 0, /*dst=*/ fantHeader.GetDst (),
                                           /*dstSeqNo=*/ m_seqNo, /*origin=*/ toOrigin.GetDestination (), /*lifeTime=*/ m_myRouteTimeout);
   Ptr<Packet> packet = Create<Packet> ();
   SocketIpTtlTag tag;
   tag.SetTtl (toOrigin.GetPheromone ());
   packet->AddPacketTag (tag);
-  packet->AddHeader (rrepHeader);
-  TypeHeader tHeader (AODVTYPE_RREP);
+  packet->AddHeader (bantHeader);
+  TypeHeader tHeader (ARATYPE_BANT);
   packet->AddHeader (tHeader);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
   NS_ASSERT (socket);
@@ -1434,14 +1434,14 @@ void
 RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, RoutingTableEntry & toOrigin, bool gratRep)
 {
   NS_LOG_FUNCTION (this);
-  RrepHeader rrepHeader (/*prefix size=*/ 0, /*pheromone=*/ toDst.GetPheromone (), /*dst=*/ toDst.GetDestination (), /*dst seqno=*/ toDst.GetSeqNo (),
+  BANTHeader bantHeader (/*prefix size=*/ 0, /*pheromone=*/ toDst.GetPheromone (), /*dst=*/ toDst.GetDestination (), /*dst seqno=*/ toDst.GetSeqNo (),
                                           /*origin=*/ toOrigin.GetDestination (), /*lifetime=*/ toDst.GetLifeTime ());
-  /* If the node we received a RREQ for is a neighbor we are
+  /* If the node we received a FANT for is a neighbor we are
    * probably facing a unidirectional link... Better request a RREP-ack
    */
   if (toDst.GetPheromone () == 1)
     {
-      rrepHeader.SetAckRequired (true);
+      bantHeader.SetAckRequired (true);
       RoutingTableEntry toNextHop;
       m_routingTable.LookupRoute (toOrigin.GetNextHop (), toNextHop);
       toNextHop.m_ackTimer.SetFunction (&RoutingProtocol::AckTimerExpire, this);
@@ -1457,8 +1457,8 @@ RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, Routing
   SocketIpTtlTag tag;
   tag.SetTtl (toOrigin.GetPheromone ());
   packet->AddPacketTag (tag);
-  packet->AddHeader (rrepHeader);
-  TypeHeader tHeader (AODVTYPE_RREP);
+  packet->AddHeader (bantHeader);
+  TypeHeader tHeader (ARATYPE_BANT);
   packet->AddHeader (tHeader);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
   NS_ASSERT (socket);
@@ -1467,7 +1467,7 @@ RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, Routing
   // Generating gratuitous RREPs
   if (gratRep)
     {
-      RrepHeader gratRepHeader (/*prefix size=*/ 0, /*pheromone=*/ toOrigin.GetPheromone (), /*dst=*/ toOrigin.GetDestination (),
+      BANTHeader gratRepHeader (/*prefix size=*/ 0, /*pheromone=*/ toOrigin.GetPheromone (), /*dst=*/ toOrigin.GetDestination (),
                                                  /*dst seqno=*/ toOrigin.GetSeqNo (), /*origin=*/ toDst.GetDestination (),
                                                  /*lifetime=*/ toOrigin.GetLifeTime ());
       Ptr<Packet> packetToDst = Create<Packet> ();
@@ -1475,11 +1475,11 @@ RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, Routing
       gratTag.SetTtl (toDst.GetPheromone ());
       packetToDst->AddPacketTag (gratTag);
       packetToDst->AddHeader (gratRepHeader);
-      TypeHeader type (AODVTYPE_RREP);
+      TypeHeader type (ARATYPE_BANT);
       packetToDst->AddHeader (type);
       Ptr<Socket> socket = FindSocketWithInterfaceAddress (toDst.GetInterface ());
       NS_ASSERT (socket);
-      NS_LOG_LOGIC ("Send gratuitous RREP " << packet->GetUid ());
+      NS_LOG_LOGIC ("Send gratuitous BANT " << packet->GetUid ());
       socket->SendTo (packetToDst, 0, InetSocketAddress (toDst.GetNextHop (), AODV_PORT));
     }
 }
@@ -1507,18 +1507,18 @@ void
 RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sender)
 {
   NS_LOG_FUNCTION (this << " src " << sender);
-  RrepHeader rrepHeader;
-  p->RemoveHeader (rrepHeader);
-  Ipv4Address dst = rrepHeader.GetDst ();
-  NS_LOG_LOGIC ("RREP destination " << dst << " RREP origin " << rrepHeader.GetOrigin ());
+  BANTHeader bantHeader;
+  p->RemoveHeader (bantHeader);
+  Ipv4Address dst = bantHeader.GetDst ();
+  NS_LOG_LOGIC ("BANT destination " << dst << " BANT origin " << bantHeader.GetOrigin ());
 
-  uint8_t pheromone = rrepHeader.GetHopCount () + 1;
-  rrepHeader.SetHopCount (pheromone);
+  uint8_t pheromone = bantHeader.GetHopCount () + 1;
+  bantHeader.SetHopCount (pheromone);
 
-  // If RREP is Hello message
-  if (dst == rrepHeader.GetOrigin ())
+  // If BANT is Hello message
+  if (dst == bantHeader.GetOrigin ())
     {
-      ProcessHello (rrepHeader, receiver);
+      ProcessHello (bantHeader, receiver);
       return;
     }
 
@@ -1526,16 +1526,16 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
    * If the route table entry to the destination is created or updated, then the following actions occur:
    * -  the route is marked as active,
    * -  the destination sequence number is marked as valid,
-   * -  the next hop in the route entry is assigned to be the node from which the RREP is received,
+   * -  the next hop in the route entry is assigned to be the node from which the BANT is received,
    *    which is indicated by the source IP address field in the IP header,
-   * -  the hop count is set to the value of the hop count from RREP message + 1
-   * -  the expiry time is set to the current time plus the value of the Lifetime in the RREP message,
-   * -  and the destination sequence number is the Destination Sequence Number in the RREP message.
+   * -  the hop count is set to the value of the hop count from BANT message + 1
+   * -  the expiry time is set to the current time plus the value of the Lifetime in the BANT message,
+   * -  and the destination sequence number is the Destination Sequence Number in the BANT message.
    */
   Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (receiver));
-  RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ dst, /*validSeqNo=*/ true, /*seqno=*/ rrepHeader.GetDstSeqno (),
+  RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ dst, /*validSeqNo=*/ true, /*seqno=*/ bantHeader.GetDstSeqno (),
                                           /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (receiver), 0),/*pheromone=*/ pheromone,
-                                          /*nextHop=*/ sender, /*lifeTime=*/ rrepHeader.GetLifeTime ());
+                                          /*nextHop=*/ sender, /*lifeTime=*/ bantHeader.GetLifeTime ());
   RoutingTableEntry toDst;
   if (m_routingTable.LookupRoute (dst, toDst))
     {
@@ -1547,20 +1547,20 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
         {
           m_routingTable.Update (newEntry);
         }
-      // (ii)the Destination Sequence Number in the RREP is greater than the node's copy of the destination sequence number and the known value is valid,
-      else if ((int32_t (rrepHeader.GetDstSeqno ()) - int32_t (toDst.GetSeqNo ())) > 0)
+      // (ii)the Destination Sequence Number in the BANT is greater than the node's copy of the destination sequence number and the known value is valid,
+      else if ((int32_t (bantHeader.GetDstSeqno ()) - int32_t (toDst.GetSeqNo ())) > 0)
         {
           m_routingTable.Update (newEntry);
         }
       else
         {
           // (iii) the sequence numbers are the same, but the route is marked as inactive.
-          if ((rrepHeader.GetDstSeqno () == toDst.GetSeqNo ()) && (toDst.GetFlag () != VALID))
+          if ((bantHeader.GetDstSeqno () == toDst.GetSeqNo ()) && (toDst.GetFlag () != VALID))
             {
               m_routingTable.Update (newEntry);
             }
           // (iv)  the sequence numbers are the same, and the New Hop Count is smaller than the hop count in route table entry.
-          else if ((rrepHeader.GetDstSeqno () == toDst.GetSeqNo ()) && (pheromone < toDst.GetPheromone ()))
+          else if ((bantHeader.GetDstSeqno () == toDst.GetSeqNo ()) && (pheromone < toDst.GetPheromone ()))
             {
               m_routingTable.Update (newEntry);
             }
@@ -1572,14 +1572,14 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
       NS_LOG_LOGIC ("add new route");
       m_routingTable.AddRoute (newEntry);
     }
-  // Acknowledge receipt of the RREP by sending a RREP-ACK message back
-  if (rrepHeader.GetAckRequired ())
+  // Acknowledge receipt of the BANT by sending a RREP-ACK message back
+  if (bantHeader.GetAckRequired ())
     {
       SendReplyAck (sender);
-      rrepHeader.SetAckRequired (false);
+      bantHeader.SetAckRequired (false);
     }
-  NS_LOG_LOGIC ("receiver " << receiver << " origin " << rrepHeader.GetOrigin ());
-  if (IsMyOwnAddress (rrepHeader.GetOrigin ()))
+  NS_LOG_LOGIC ("receiver " << receiver << " origin " << bantHeader.GetOrigin ());
+  if (IsMyOwnAddress (bantHeader.GetOrigin ()))
     {
       if (toDst.GetFlag () == IN_SEARCH)
         {
@@ -1593,7 +1593,7 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
     }
 
   RoutingTableEntry toOrigin;
-  if (!m_routingTable.LookupRoute (rrepHeader.GetOrigin (), toOrigin) || toOrigin.GetFlag () == IN_SEARCH)
+  if (!m_routingTable.LookupRoute (bantHeader.GetOrigin (), toOrigin) || toOrigin.GetFlag () == IN_SEARCH)
     {
       return; // Impossible! drop.
     }
@@ -1601,7 +1601,7 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
   m_routingTable.Update (toOrigin);
 
   // Update information about precursors
-  if (m_routingTable.LookupValidRoute (rrepHeader.GetDst (), toDst))
+  if (m_routingTable.LookupValidRoute (bantHeader.GetDst (), toDst))
     {
       toDst.InsertPrecursor (toOrigin.GetNextHop ());
       m_routingTable.Update (toDst);
@@ -1623,7 +1623,7 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
   p->RemovePacketTag (tag);
   if (tag.GetTtl () < 2)
     {
-      NS_LOG_DEBUG ("TTL exceeded. Drop RREP destination " << dst << " origin " << rrepHeader.GetOrigin ());
+      NS_LOG_DEBUG ("TTL exceeded. Drop BANT destination " << dst << " origin " << bantHeader.GetOrigin ());
       return;
     }
 
@@ -1631,8 +1631,8 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
   SocketIpTtlTag ttl;
   ttl.SetTtl (tag.GetTtl () - 1);
   packet->AddPacketTag (ttl);
-  packet->AddHeader (rrepHeader);
-  TypeHeader tHeader (AODVTYPE_RREP);
+  packet->AddHeader (bantHeader);
+  TypeHeader tHeader (ARATYPE_BANT);
   packet->AddHeader (tHeader);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
   NS_ASSERT (socket);
@@ -1653,38 +1653,38 @@ RoutingProtocol::RecvReplyAck (Ipv4Address neighbor)
 }
 
 void
-RoutingProtocol::ProcessHello (RrepHeader const & rrepHeader, Ipv4Address receiver )
+RoutingProtocol::ProcessHello (BANTHeader const & bantHeader, Ipv4Address receiver )
 {
-  NS_LOG_FUNCTION (this << "from " << rrepHeader.GetDst ());
+  NS_LOG_FUNCTION (this << "from " << bantHeader.GetDst ());
   /*
    *  Whenever a node receives a Hello message from a neighbor, the node
    * SHOULD make sure that it has an active route to the neighbor, and
    * create one if necessary.
    */
   RoutingTableEntry toNeighbor;
-  if (!m_routingTable.LookupRoute (rrepHeader.GetDst (), toNeighbor))
+  if (!m_routingTable.LookupRoute (bantHeader.GetDst (), toNeighbor))
     {
       Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (receiver));
-      RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ rrepHeader.GetDst (), /*validSeqNo=*/ true, /*seqno=*/ rrepHeader.GetDstSeqno (),
+      RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ bantHeader.GetDst (), /*validSeqNo=*/ true, /*seqno=*/ bantHeader.GetDstSeqno (),
                                               /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (receiver), 0),
-                                              /*pheromone=*/ 1, /*nextHop=*/ rrepHeader.GetDst (), /*lifeTime=*/ rrepHeader.GetLifeTime ());
+                                              /*pheromone=*/ 1, /*nextHop=*/ bantHeader.GetDst (), /*lifeTime=*/ bantHeader.GetLifeTime ());
       m_routingTable.AddRoute (newEntry);
     }
   else
     {
       toNeighbor.SetLifeTime (std::max (Time (m_allowedHelloLoss * m_helloInterval), toNeighbor.GetLifeTime ()));
-      toNeighbor.SetSeqNo (rrepHeader.GetDstSeqno ());
+      toNeighbor.SetSeqNo (bantHeader.GetDstSeqno ());
       toNeighbor.SetValidSeqNo (true);
       toNeighbor.SetFlag (VALID);
       toNeighbor.SetOutputDevice (m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (receiver)));
       toNeighbor.SetInterface (m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (receiver), 0));
       toNeighbor.SetPheromone (1);
-      toNeighbor.SetNextHop (rrepHeader.GetDst ());
+      toNeighbor.SetNextHop (bantHeader.GetDst ());
       m_routingTable.Update (toNeighbor);
     }
   if (m_enableHello)
     {
-      m_nb.Update (rrepHeader.GetDst (), Time (m_allowedHelloLoss * m_helloInterval));
+      m_nb.Update (bantHeader.GetDst (), Time (m_allowedHelloLoss * m_helloInterval));
     }
 }
 
@@ -1761,7 +1761,7 @@ RoutingProtocol::RouteRequestTimerExpire (Ipv4Address dst)
     }
   /*
    *  If a route discovery has been attempted RreqRetries times at the maximum TTL without
-   *  receiving any RREP, all data packets destined for the corresponding destination SHOULD be
+   *  receiving any BANT, all data packets destined for the corresponding destination SHOULD be
    *  dropped from the buffer and a Destination Unreachable message SHOULD be delivered to the application.
    */
   if (toDst.GetRreqCnt () == m_rreqRetries)
@@ -1835,7 +1835,7 @@ void
 RoutingProtocol::SendHello ()
 {
   NS_LOG_FUNCTION (this);
-  /* Broadcast a RREP with TTL = 1 with the RREP message fields set as follows:
+  /* Broadcast a BANT with TTL = 1 with the BANT message fields set as follows:
    *   Destination IP Address         The node's IP address.
    *   Destination Sequence Number    The node's latest sequence number.
    *   Pheromone                      0
@@ -1845,14 +1845,14 @@ RoutingProtocol::SendHello ()
     {
       Ptr<Socket> socket = j->first;
       Ipv4InterfaceAddress iface = j->second;
-      RrepHeader helloHeader (/*prefix size=*/ 0, /*pheromone=*/ 0, /*dst=*/ iface.GetLocal (), /*dst seqno=*/ m_seqNo,
+      BANTHeader helloHeader (/*prefix size=*/ 0, /*pheromone=*/ 0, /*dst=*/ iface.GetLocal (), /*dst seqno=*/ m_seqNo,
                                                /*origin=*/ iface.GetLocal (),/*lifetime=*/ Time (m_allowedHelloLoss * m_helloInterval));
       Ptr<Packet> packet = Create<Packet> ();
       SocketIpTtlTag tag;
       tag.SetTtl (1);
       packet->AddPacketTag (tag);
       packet->AddHeader (helloHeader);
-      TypeHeader tHeader (AODVTYPE_RREP);
+      TypeHeader tHeader (ARATYPE_BANT);
       packet->AddHeader (tHeader);
       // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
       Ipv4Address destination;

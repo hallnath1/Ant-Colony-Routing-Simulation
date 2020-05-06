@@ -314,7 +314,7 @@ private:
    * \param rrepHeader RREP message header
    * \param receiverIfaceAddr receiver interface IP address
    */
-  void ProcessHello (RrepHeader const & rrepHeader, Ipv4Address receiverIfaceAddr);
+  void ProcessHello (BANTHeader const & bantHeader, Ipv4Address receiverIfaceAddr);
   /**
    * Create loopback route for given header
    *
@@ -328,7 +328,7 @@ private:
   //\{
   /// Receive and process control packet
   void RecvAodv (Ptr<Socket> socket);
-  /// Receive RREQ
+  /// Receive FANT
   void RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address src);
   /// Receive RREP
   void RecvReply (Ptr<Packet> p, Ipv4Address my,Ipv4Address src);
@@ -344,10 +344,10 @@ private:
   void SendPacketFromQueue (Ipv4Address dst, Ptr<Ipv4Route> route);
   /// Send hello
   void SendHello ();
-  /// Send RREQ
+  /// Send FANT
   void SendRequest (Ipv4Address dst);
-  /// Send RREP
-  void SendReply (RreqHeader const & rreqHeader, RoutingTableEntry const & toOrigin);
+  /// Send FANT
+  void SendReply (FANTHeader const & fantHeader, RoutingTableEntry const & toOrigin);
   /** Send RREP by intermediate node
    * \param toDst routing table entry to destination
    * \param toOrigin routing table entry to originator

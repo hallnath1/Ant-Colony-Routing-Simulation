@@ -77,8 +77,8 @@ TypeHeader::Deserialize (Buffer::Iterator start)
   m_valid = true;
   switch (type)
     {
-    case ARATYPE_FANT:
-    case ARATYPE_BANT:
+    case AODVTYPE_RREQ:
+    case AODVTYPE_RREP:
     case AODVTYPE_RERR:
     case AODVTYPE_RREP_ACK:
       {
@@ -98,14 +98,14 @@ TypeHeader::Print (std::ostream &os) const
 {
   switch (m_type)
     {
-    case ARATYPE_FANT:
+    case AODVTYPE_RREQ:
       {
-        os << "FANT";
+        os << "RREQ";
         break;
       }
-    case ARATYPE_BANT:
+    case AODVTYPE_RREP:
       {
-        os << "BANT";
+        os << "RREP";
         break;
       }
     case AODVTYPE_RERR:
@@ -139,11 +139,11 @@ operator<< (std::ostream & os, TypeHeader const & h)
 //-----------------------------------------------------------------------------
 // RREQ
 //-----------------------------------------------------------------------------
-FANTHeader::FANTHeader (uint8_t flags, uint8_t reserved, uint8_t pheromone, uint32_t requestID, Ipv4Address dst,
+RreqHeader::RreqHeader (uint8_t flags, uint8_t reserved, uint8_t hopCount, uint32_t requestID, Ipv4Address dst,
                         uint32_t dstSeqNo, Ipv4Address origin, uint32_t originSeqNo)
   : m_flags (flags),
     m_reserved (reserved),
-    m_pheromone (pheromone),
+    m_hopCount (hopCount),
     m_requestID (requestID),
     m_dst (dst),
     m_dstSeqNo (dstSeqNo),
@@ -152,37 +152,37 @@ FANTHeader::FANTHeader (uint8_t flags, uint8_t reserved, uint8_t pheromone, uint
 {
 }
 
-NS_OBJECT_ENSURE_REGISTERED (FANTHeader);
+NS_OBJECT_ENSURE_REGISTERED (RreqHeader);
 
 TypeId
-FANTHeader::GetTypeId ()
+RreqHeader::GetTypeId ()
 {
-  static TypeId tid = TypeId ("ns3::ara::FANTHeader")
+  static TypeId tid = TypeId ("ns3::ara::RreqHeader")
     .SetParent<Header> ()
     .SetGroupName ("Ara")
-    .AddConstructor<FANTHeader> ()
+    .AddConstructor<RreqHeader> ()
   ;
   return tid;
 }
 
 TypeId
-FANTHeader::GetInstanceTypeId () const
+RreqHeader::GetInstanceTypeId () const
 {
   return GetTypeId ();
 }
 
 uint32_t
-FANTHeader::GetSerializedSize () const
+RreqHeader::GetSerializedSize () const
 {
   return 23;
 }
 
 void
-FANTHeader::Serialize (Buffer::Iterator i) const
+RreqHeader::Serialize (Buffer::Iterator i) const
 {
   i.WriteU8 (m_flags);
   i.WriteU8 (m_reserved);
-  i.WriteU8 (m_pheromone);
+  i.WriteU8 (m_hopCount);
   i.WriteHtonU32 (m_requestID);
   WriteTo (i, m_dst);
   i.WriteHtonU32 (m_dstSeqNo);
@@ -191,12 +191,12 @@ FANTHeader::Serialize (Buffer::Iterator i) const
 }
 
 uint32_t
-FANTHeader::Deserialize (Buffer::Iterator start)
+RreqHeader::Deserialize (Buffer::Iterator start)
 {
   Buffer::Iterator i = start;
   m_flags = i.ReadU8 ();
   m_reserved = i.ReadU8 ();
-  m_pheromone = i.ReadU8 ();
+  m_hopCount = i.ReadU8 ();
   m_requestID = i.ReadNtohU32 ();
   ReadFrom (i, m_dst);
   m_dstSeqNo = i.ReadNtohU32 ();
@@ -209,7 +209,7 @@ FANTHeader::Deserialize (Buffer::Iterator start)
 }
 
 void
-FANTHeader::Print (std::ostream &os) const
+RreqHeader::Print (std::ostream &os) const
 {
   os << "RREQ ID " << m_requestID << " destination: ipv4 " << m_dst
      << " sequence number " << m_dstSeqNo << " source: ipv4 "
@@ -220,14 +220,14 @@ FANTHeader::Print (std::ostream &os) const
 }
 
 std::ostream &
-operator<< (std::ostream & os, FANTHeader const & h)
+operator<< (std::ostream & os, RreqHeader const & h)
 {
   h.Print (os);
   return os;
 }
 
 void
-FANTHeader::SetGratuitousRrep (bool f)
+RreqHeader::SetGratuitousRrep (bool f)
 {
   if (f)
     {
@@ -240,13 +240,13 @@ FANTHeader::SetGratuitousRrep (bool f)
 }
 
 bool
-FANTHeader::GetGratuitousRrep () const
+RreqHeader::GetGratuitousRrep () const
 {
   return (m_flags & (1 << 5));
 }
 
 void
-FANTHeader::SetDestinationOnly (bool f)
+RreqHeader::SetDestinationOnly (bool f)
 {
   if (f)
     {
@@ -259,13 +259,13 @@ FANTHeader::SetDestinationOnly (bool f)
 }
 
 bool
-FANTHeader::GetDestinationOnly () const
+RreqHeader::GetDestinationOnly () const
 {
   return (m_flags & (1 << 4));
 }
 
 void
-FANTHeader::SetUnknownSeqno (bool f)
+RreqHeader::SetUnknownSeqno (bool f)
 {
   if (f)
     {
@@ -278,16 +278,16 @@ FANTHeader::SetUnknownSeqno (bool f)
 }
 
 bool
-FANTHeader::GetUnknownSeqno () const
+RreqHeader::GetUnknownSeqno () const
 {
   return (m_flags & (1 << 3));
 }
 
 bool
-FANTHeader::operator== (FANTHeader const & o) const
+RreqHeader::operator== (RreqHeader const & o) const
 {
   return (m_flags == o.m_flags && m_reserved == o.m_reserved
-          && m_pheromone == o.m_pheromone && m_requestID == o.m_requestID
+          && m_hopCount == o.m_hopCount && m_requestID == o.m_requestID
           && m_dst == o.m_dst && m_dstSeqNo == o.m_dstSeqNo
           && m_origin == o.m_origin && m_originSeqNo == o.m_originSeqNo);
 }
@@ -296,7 +296,7 @@ FANTHeader::operator== (FANTHeader const & o) const
 // RREP
 //-----------------------------------------------------------------------------
 
-BANTHeader::BANTHeader (uint8_t prefixSize, uint8_t hopCount, Ipv4Address dst,
+RrepHeader::RrepHeader (uint8_t prefixSize, uint8_t hopCount, Ipv4Address dst,
                         uint32_t dstSeqNo, Ipv4Address origin, Time lifeTime)
   : m_flags (0),
     m_prefixSize (prefixSize),
@@ -308,33 +308,33 @@ BANTHeader::BANTHeader (uint8_t prefixSize, uint8_t hopCount, Ipv4Address dst,
   m_lifeTime = uint32_t (lifeTime.GetMilliSeconds ());
 }
 
-NS_OBJECT_ENSURE_REGISTERED (BANTHeader);
+NS_OBJECT_ENSURE_REGISTERED (RrepHeader);
 
 TypeId
-BANTHeader::GetTypeId ()
+RrepHeader::GetTypeId ()
 {
-  static TypeId tid = TypeId ("ns3::ara::BANTHeader")
+  static TypeId tid = TypeId ("ns3::ara::RrepHeader")
     .SetParent<Header> ()
     .SetGroupName ("Ara")
-    .AddConstructor<BANTHeader> ()
+    .AddConstructor<RrepHeader> ()
   ;
   return tid;
 }
 
 TypeId
-BANTHeader::GetInstanceTypeId () const
+RrepHeader::GetInstanceTypeId () const
 {
   return GetTypeId ();
 }
 
 uint32_t
-BANTHeader::GetSerializedSize () const
+RrepHeader::GetSerializedSize () const
 {
   return 19;
 }
 
 void
-BANTHeader::Serialize (Buffer::Iterator i) const
+RrepHeader::Serialize (Buffer::Iterator i) const
 {
   i.WriteU8 (m_flags);
   i.WriteU8 (m_prefixSize);
@@ -346,7 +346,7 @@ BANTHeader::Serialize (Buffer::Iterator i) const
 }
 
 uint32_t
-BANTHeader::Deserialize (Buffer::Iterator start)
+RrepHeader::Deserialize (Buffer::Iterator start)
 {
   Buffer::Iterator i = start;
 
@@ -364,7 +364,7 @@ BANTHeader::Deserialize (Buffer::Iterator start)
 }
 
 void
-BANTHeader::Print (std::ostream &os) const
+RrepHeader::Print (std::ostream &os) const
 {
   os << "destination: ipv4 " << m_dst << " sequence number " << m_dstSeqNo;
   if (m_prefixSize != 0)
@@ -376,20 +376,20 @@ BANTHeader::Print (std::ostream &os) const
 }
 
 void
-BANTHeader::SetLifeTime (Time t)
+RrepHeader::SetLifeTime (Time t)
 {
   m_lifeTime = t.GetMilliSeconds ();
 }
 
 Time
-BANTHeader::GetLifeTime () const
+RrepHeader::GetLifeTime () const
 {
   Time t (MilliSeconds (m_lifeTime));
   return t;
 }
 
 void
-BANTHeader::SetAckRequired (bool f)
+RrepHeader::SetAckRequired (bool f)
 {
   if (f)
     {
@@ -402,25 +402,25 @@ BANTHeader::SetAckRequired (bool f)
 }
 
 bool
-BANTHeader::GetAckRequired () const
+RrepHeader::GetAckRequired () const
 {
   return (m_flags & (1 << 6));
 }
 
 void
-BANTHeader::SetPrefixSize (uint8_t sz)
+RrepHeader::SetPrefixSize (uint8_t sz)
 {
   m_prefixSize = sz;
 }
 
 uint8_t
-BANTHeader::GetPrefixSize () const
+RrepHeader::GetPrefixSize () const
 {
   return m_prefixSize;
 }
 
 bool
-BANTHeader::operator== (BANTHeader const & o) const
+RrepHeader::operator== (RrepHeader const & o) const
 {
   return (m_flags == o.m_flags && m_prefixSize == o.m_prefixSize
           && m_hopCount == o.m_hopCount && m_dst == o.m_dst && m_dstSeqNo == o.m_dstSeqNo
@@ -428,7 +428,7 @@ BANTHeader::operator== (BANTHeader const & o) const
 }
 
 void
-BANTHeader::SetHello (Ipv4Address origin, uint32_t srcSeqNo, Time lifetime)
+RrepHeader::SetHello (Ipv4Address origin, uint32_t srcSeqNo, Time lifetime)
 {
   m_flags = 0;
   m_prefixSize = 0;
@@ -440,7 +440,7 @@ BANTHeader::SetHello (Ipv4Address origin, uint32_t srcSeqNo, Time lifetime)
 }
 
 std::ostream &
-operator<< (std::ostream & os, BANTHeader const & h)
+operator<< (std::ostream & os, RrepHeader const & h)
 {
   h.Print (os);
   return os;

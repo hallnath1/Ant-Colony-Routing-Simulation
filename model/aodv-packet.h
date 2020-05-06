@@ -44,24 +44,24 @@ namespace ara {
 */
 enum MessageType
 {
-  ARATYPE_FANT  = 1,   //!< ARATYPE_FANT
-  ARATYPE_BANT  = 2,   //!< ARATYPE_BANT
+  AODVTYPE_RREQ  = 1,   //!< AODVTYPE_RREQ
+  AODVTYPE_RREP  = 2,   //!< AODVTYPE_RREP
   AODVTYPE_RERR  = 3,   //!< AODVTYPE_RERR
   AODVTYPE_RREP_ACK = 4 //!< AODVTYPE_RREP_ACK
 };
 
 /**
-* \ingroup ara
-* \brief ARA types
+* \ingroup aodv
+* \brief AODV types
 */
 class TypeHeader : public Header
 {
 public:
   /**
    * constructor
-   * \param t the ARA FANT type
+   * \param t the AODV RREQ type
    */
-  TypeHeader (MessageType t = ARATYPE_FANT);
+  TypeHeader (MessageType t = AODVTYPE_RREQ);
 
   /**
    * \brief Get the type ID.
@@ -108,15 +108,15 @@ private:
 std::ostream & operator<< (std::ostream & os, TypeHeader const & h);
 
 /**
-* \ingroup ara
-* \brief   Forward Ant (FANT) Message Format
+* \ingroup aodv
+* \brief   Route Request (RREQ) Message Format
   \verbatim
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |J|R|G|D|U|   Reserved          |   Pheromone   |
+  |     Type      |J|R|G|D|U|   Reserved          |   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                            FANT ID                            |
+  |                            RREQ ID                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                    Destination IP Address                     |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -128,7 +128,7 @@ std::ostream & operator<< (std::ostream & os, TypeHeader const & h);
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class FANTHeader : public Header
+class RreqHeader : public Header
 {
 public:
   /**
@@ -143,7 +143,7 @@ public:
    * \param origin the origin IP address
    * \param originSeqNo the origin sequence number
    */
-   FANTHeader (uint8_t flags = 0, uint8_t reserved = 0, uint8_t pheromone = 0,
+   RreqHeader (uint8_t flags = 0, uint8_t reserved = 0, uint8_t hopCount = 0,
               uint32_t requestID = 0, Ipv4Address dst = Ipv4Address (),
               uint32_t dstSeqNo = 0, Ipv4Address origin = Ipv4Address (),
               uint32_t originSeqNo = 0);
@@ -164,17 +164,17 @@ public:
    * \brief Set the hop count
    * \param count the hop count
    */
-  void SetPheromone (uint8_t pheromone)
+  void SetHopCount (uint8_t count)
   {
-    m_pheromone = pheromone;
+    m_hopCount = count;
   }
   /**
    * \brief Get the hop count
    * \return the hop count
    */
-  uint8_t GetPheromone () const
+  uint8_t GetHopCount () const
   {
-    return m_pheromone;
+    return m_hopCount;
   }
   /**
    * \brief Set the request ID
@@ -294,11 +294,11 @@ public:
    * \param o RREQ header to compare
    * \return true if the RREQ headers are equal
    */
-  bool operator== (FANTHeader const & o) const;
+  bool operator== (RreqHeader const & o) const;
 private:
   uint8_t        m_flags;          ///< |J|R|G|D|U| bit flags, see RFC
   uint8_t        m_reserved;       ///< Not used (must be 0)
-  uint8_t        m_pheromone;       ///< Hop Count
+  uint8_t        m_hopCount;       ///< Hop Count
   uint32_t       m_requestID;      ///< RREQ ID
   Ipv4Address    m_dst;            ///< Destination IP Address
   uint32_t       m_dstSeqNo;       ///< Destination Sequence Number
@@ -311,30 +311,28 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, FANTHeader const &);
+std::ostream & operator<< (std::ostream & os, RreqHeader const &);
 
 /**
 * \ingroup aodv
-* \brief Backward Ant (BANT) Message Format
+* \brief Route Reply (RREP) Message Format
   \verbatim
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |J|R|G|D|U|   Reserved          |   Pheromone   |
+  |     Type      |R|A|    Reserved     |Prefix Sz|   Hop Count   |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                            BANT ID                            |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    Destination IP Address                     |
+  |                     Destination IP address                    |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                  Destination Sequence Number                  |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    Originator IP Address                      |
+  |                    Originator IP address                      |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                  Originator Sequence Number                   |
+  |                           Lifetime                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class BANTHeader : public Header
+class RrepHeader : public Header
 {
 public:
   /**
@@ -347,7 +345,7 @@ public:
    * \param origin the origin IP address
    * \param lifetime the lifetime
    */
-  BANTHeader (uint8_t prefixSize = 0, uint8_t hopCount = 0, Ipv4Address dst =
+  RrepHeader (uint8_t prefixSize = 0, uint8_t hopCount = 0, Ipv4Address dst =
                 Ipv4Address (), uint32_t dstSeqNo = 0, Ipv4Address origin =
                 Ipv4Address (), Time lifetime = MilliSeconds (0));
   /**
@@ -473,7 +471,7 @@ public:
    * \param o RREP header to compare
    * \return true if the RREP headers are equal
    */
-  bool operator== (BANTHeader const & o) const;
+  bool operator== (RrepHeader const & o) const;
 private:
   uint8_t       m_flags;                  ///< A - acknowledgment required flag
   uint8_t       m_prefixSize;         ///< Prefix Size
@@ -489,7 +487,7 @@ private:
   * \param os output stream
   * \return updated stream
   */
-std::ostream & operator<< (std::ostream & os, BANTHeader const &);
+std::ostream & operator<< (std::ostream & os, RrepHeader const &);
 
 /**
 * \ingroup aodv
